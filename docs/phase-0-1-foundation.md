@@ -295,7 +295,7 @@ By putting it in `Config/`, we use our own reader and avoid collisions with Mage
 previous step. `shipping` unlocks when `addressSaved` fires. `payment` unlocks when
 `shippingMethodSelected` fires. This drives the progressive disclosure UX.
 
-### `Model/Step/Config.php` — the reader
+### `Model/Step/Config.php` — the reader -- 
 
 ```php
 $modulePaths = $this->componentRegistrar->getPaths(ComponentRegistrar::MODULE);
