@@ -9,12 +9,11 @@
         </arguments>
     </type>
 
-    <!-- Payment method pool: adapters registered here by PSP sub-modules -->
+    <!-- Payment method pool: PSP adapters registered here by sub-modules (Viva, Revolut, etc.)
+         Offline methods (checkmo, banktransfer, etc.) are auto-discovered by MethodPool itself. -->
     <type name="Ethelserth\Checkout\Model\Payment\MethodPool">
         <arguments>
-            <argument name="adapters" xsi:type="array">
-                <item name="offline" xsi:type="object">Ethelserth\Checkout\Model\Payment\Adapter\Offline</item>
-            </argument>
+            <argument name="adapters" xsi:type="array"/>
         </arguments>
     </type>
 

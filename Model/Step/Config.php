@@ -3,9 +3,8 @@ declare(strict_types=1);
 
 namespace Ethelserth\Checkout\Model\Step;
 
-use Magento\Framework\Config\FileResolverInterface;
-use Magento\Framework\Config\ValidationStateInterface;
-use Magento\Framework\Module\Dir\Reader as ModuleDirReader;
+use Magento\Framework\Component\ComponentRegistrar;
+use Magento\Framework\Component\ComponentRegistrarInterface;
 
 class Config
 {
@@ -14,7 +13,7 @@ class Config
     private bool $loaded = false;
 
     public function __construct(
-        private readonly ModuleDirReader $moduleDirReader,
+        private readonly ComponentRegistrarInterface $componentRegistrar,
         private readonly string $configFile = 'checkout_steps.xml',
     ) {}
 
@@ -30,20 +29,29 @@ class Config
     private function load(): void
     {
         $this->loaded = true;
-        $files = $this->moduleDirReader->getConfigurationFiles($this->configFile);
 
-        foreach ($files as $file) {
+        // Scan Config/checkout_steps.xml in every registered module
+        $modulePaths = $this->componentRegistrar->getPaths(ComponentRegistrar::MODULE);
+
+        foreach ($modulePaths as $modulePath) {
+            $file = $modulePath . '/Config/' . $this->configFile;
+            if (!file_exists($file)) {
+                continue;
+            }
+
             $xml = simplexml_load_file($file);
             if ($xml === false) {
                 continue;
             }
+
             foreach ($xml->steps->step ?? [] as $step) {
                 $attrs = (array) $step->attributes();
                 $attrs = $attrs['@attributes'] ?? [];
-                $name = (string) ($attrs['name'] ?? '');
+                $name  = (string) ($attrs['name'] ?? '');
                 if (!$name) {
                     continue;
                 }
+
                 if (!isset($this->steps[$name])) {
                     $this->steps[$name] = [
                         'name'      => $name,
@@ -55,6 +63,7 @@ class Config
                         'disabled'  => false,
                     ];
                 }
+
                 foreach (['label', 'magewire', 'template', 'order', 'unlock_on', 'disabled'] as $key) {
                     if (isset($attrs[$key])) {
                         $value = (string) $attrs[$key];

@@ -8,7 +8,7 @@
 declare(strict_types=1);
 ?>
 
-<div wire:use="Ethelserth\Checkout\Magewire\Step\Payment">
+<div>
 
     <!-- Express rail (PSP modules inject here, e.g. Revolut Fast Checkout) -->
     <?= $block->getChildHtml('checkout.express.rail.payment') ?>

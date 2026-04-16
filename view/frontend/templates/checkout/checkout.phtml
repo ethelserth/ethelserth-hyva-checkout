@@ -137,14 +137,7 @@ document.addEventListener('alpine:init', () => {
                      x-transition:enter-start="opacity-0 -translate-y-1"
                      x-transition:enter-end="opacity-100 translate-y-0"
                      class="p-6">
-                    <?php
-                    // Each step is a Magewire component rendered via its own phtml
-                    // The Magewire wiring is done inside each step's template
-                    echo $block->getLayout()
-                        ->createBlock(\Magento\Framework\View\Element\Template::class)
-                        ->setTemplate($step->getTemplate())
-                        ->toHtml();
-                    ?>
+                    <?= $block->getChildHtml('checkout.step.' . $step->getName()) ?>
                 </div>
 
             </div>

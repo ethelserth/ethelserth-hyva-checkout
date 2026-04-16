@@ -4,11 +4,7 @@
       layout="1column">
     <update handle="hyva_reset_styles"/>
     <body>
-        <referenceBlock name="fallback.module.missing">
-            <action method="setTemplate">
-                <argument name="template" xsi:type="string"></argument>
-            </action>
-        </referenceBlock>
+        <referenceBlock name="fallback.module.missing" remove="true"/>
         <referenceContainer name="content">
             <block class="Ethelserth\Checkout\Block\Checkout"
                    name="checkout.root"
@@ -21,7 +17,31 @@
                            htmlId="checkout-express-rail"
                            htmlClass="checkout-express-rail"/>
 
-                <!-- Step child blocks are rendered dynamically from Pool -->
+                <!-- Step blocks — must be defined here with magewire argument for Magewire wiring -->
+                <block class="Magento\Framework\View\Element\Template"
+                       name="checkout.step.address"
+                       template="Ethelserth_Checkout::checkout/step/address.phtml">
+                    <arguments>
+                        <argument name="magewire" xsi:type="object">Ethelserth\Checkout\Magewire\Step\Address</argument>
+                    </arguments>
+                </block>
+
+                <block class="Magento\Framework\View\Element\Template"
+                       name="checkout.step.shipping"
+                       template="Ethelserth_Checkout::checkout/step/shipping.phtml">
+                    <arguments>
+                        <argument name="magewire" xsi:type="object">Ethelserth\Checkout\Magewire\Step\Shipping</argument>
+                    </arguments>
+                </block>
+
+                <block class="Magento\Framework\View\Element\Template"
+                       name="checkout.step.payment"
+                       template="Ethelserth_Checkout::checkout/step/payment.phtml">
+                    <arguments>
+                        <argument name="magewire" xsi:type="object">Ethelserth\Checkout\Magewire\Step\Payment</argument>
+                    </arguments>
+                </block>
+
             </block>
         </referenceContainer>
     </body>
