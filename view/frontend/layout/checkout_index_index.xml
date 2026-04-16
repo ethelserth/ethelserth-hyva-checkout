@@ -1,0 +1,28 @@
+<?xml version="1.0"?>
+<page xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+      xsi:noNamespaceSchemaLocation="urn:magento:framework:View/Layout/etc/page_configuration.xsd"
+      layout="1column">
+    <update handle="hyva_reset_styles"/>
+    <body>
+        <referenceBlock name="fallback.module.missing">
+            <action method="setTemplate">
+                <argument name="template" xsi:type="string"></argument>
+            </action>
+        </referenceBlock>
+        <referenceContainer name="content">
+            <block class="Ethelserth\Checkout\Block\Checkout"
+                   name="checkout.root"
+                   template="Ethelserth_Checkout::checkout/checkout.phtml"
+                   cacheable="false">
+
+                <!-- Express rail: PSP modules inject here (Revolut Fast Checkout, etc.) -->
+                <container name="checkout.express.rail"
+                           htmlTag="div"
+                           htmlId="checkout-express-rail"
+                           htmlClass="checkout-express-rail"/>
+
+                <!-- Step child blocks are rendered dynamically from Pool -->
+            </block>
+        </referenceContainer>
+    </body>
+</page>

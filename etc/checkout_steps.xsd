@@ -1,0 +1,28 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<xs:schema xmlns:xs="http://www.w3.org/2001/XMLSchema">
+
+    <xs:element name="checkout">
+        <xs:complexType>
+            <xs:sequence>
+                <xs:element name="steps" type="stepsType" minOccurs="0" maxOccurs="1"/>
+            </xs:sequence>
+        </xs:complexType>
+    </xs:element>
+
+    <xs:complexType name="stepsType">
+        <xs:sequence>
+            <xs:element name="step" type="stepType" minOccurs="0" maxOccurs="unbounded"/>
+        </xs:sequence>
+    </xs:complexType>
+
+    <xs:complexType name="stepType">
+        <xs:attribute name="name" type="xs:string" use="required"/>
+        <xs:attribute name="label" type="xs:string" use="optional"/>
+        <xs:attribute name="magewire" type="xs:string" use="optional"/>
+        <xs:attribute name="template" type="xs:string" use="optional"/>
+        <xs:attribute name="order" type="xs:integer" use="optional"/>
+        <xs:attribute name="unlock_on" type="xs:string" use="optional"/>
+        <xs:attribute name="disabled" type="xs:boolean" use="optional" default="false"/>
+    </xs:complexType>
+
+</xs:schema>

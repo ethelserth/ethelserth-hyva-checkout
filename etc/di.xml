@@ -1,0 +1,12 @@
+<?xml version="1.0"?>
+<config xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+        xsi:noNamespaceSchemaLocation="urn:magento:framework:ObjectManager/etc/config.xsd">
+
+    <!-- Step config reader: scans all modules for Config/checkout_steps.xml -->
+    <type name="Ethelserth\Checkout\Model\Step\Config">
+        <arguments>
+            <argument name="configFile" xsi:type="string">checkout_steps.xml</argument>
+        </arguments>
+    </type>
+
+</config>

@@ -1,0 +1,240 @@
+<?php
+/**
+ * Address step — full Magewire component with form.
+ *
+ * @var \Magento\Framework\View\Element\Template $block
+ * @var \Magento\Framework\Escaper $escaper
+ */
+declare(strict_types=1);
+?>
+
+<div wire:use="Ethelserth\Checkout\Magewire\Step\Address">
+
+    <form wire:submit.prevent="saveAddress" novalidate>
+
+        <!-- Email -->
+        <div class="mb-4">
+            <label for="email" class="block text-sm font-medium text-gray-700 mb-1">
+                <?= $escaper->escapeHtml(__('Email address')) ?> <span class="text-red-500">*</span>
+            </label>
+            <input type="email"
+                   id="email"
+                   name="email"
+                   wire:model.defer="email"
+                   autocomplete="email"
+                   class="w-full border border-gray-300 rounded-lg px-4 py-2.5 text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                   required/>
+        </div>
+
+        <div class="grid grid-cols-2 gap-4 mb-4">
+            <!-- First name -->
+            <div>
+                <label for="firstname" class="block text-sm font-medium text-gray-700 mb-1">
+                    <?= $escaper->escapeHtml(__('First name')) ?> <span class="text-red-500">*</span>
+                </label>
+                <input type="text"
+                       id="firstname"
+                       name="firstname"
+                       wire:model.defer="firstname"
+                       autocomplete="given-name"
+                       class="w-full border border-gray-300 rounded-lg px-4 py-2.5 text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                       required/>
+            </div>
+            <!-- Last name -->
+            <div>
+                <label for="lastname" class="block text-sm font-medium text-gray-700 mb-1">
+                    <?= $escaper->escapeHtml(__('Last name')) ?> <span class="text-red-500">*</span>
+                </label>
+                <input type="text"
+                       id="lastname"
+                       name="lastname"
+                       wire:model.defer="lastname"
+                       autocomplete="family-name"
+                       class="w-full border border-gray-300 rounded-lg px-4 py-2.5 text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                       required/>
+            </div>
+        </div>
+
+        <!-- Company -->
+        <div class="mb-4">
+            <label for="company" class="block text-sm font-medium text-gray-700 mb-1">
+                <?= $escaper->escapeHtml(__('Company (optional)')) ?>
+            </label>
+            <input type="text"
+                   id="company"
+                   name="company"
+                   wire:model.defer="company"
+                   autocomplete="organization"
+                   class="w-full border border-gray-300 rounded-lg px-4 py-2.5 text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500"/>
+        </div>
+
+        <!-- VAT ID -->
+        <div class="mb-4">
+            <label for="vat_id" class="block text-sm font-medium text-gray-700 mb-1">
+                <?= $escaper->escapeHtml(__('VAT number (optional)')) ?>
+            </label>
+            <input type="text"
+                   id="vat_id"
+                   name="vat_id"
+                   wire:model.defer="vatId"
+                   autocomplete="off"
+                   placeholder="NL123456789B01"
+                   class="w-full border border-gray-300 rounded-lg px-4 py-2.5 text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 font-mono"/>
+            <p class="mt-1 text-xs text-gray-500">
+                <?= $escaper->escapeHtml(__('EU businesses: enter your VAT number to apply 0% intra-EU VAT')) ?>
+            </p>
+        </div>
+
+        <!-- Street -->
+        <div class="mb-4">
+            <label for="street1" class="block text-sm font-medium text-gray-700 mb-1">
+                <?= $escaper->escapeHtml(__('Street address')) ?> <span class="text-red-500">*</span>
+            </label>
+            <input type="text"
+                   id="street1"
+                   name="street1"
+                   wire:model.defer="street1"
+                   autocomplete="address-line1"
+                   class="w-full border border-gray-300 rounded-lg px-4 py-2.5 text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 mb-2"
+                   required/>
+            <input type="text"
+                   id="street2"
+                   name="street2"
+                   wire:model.defer="street2"
+                   autocomplete="address-line2"
+                   placeholder="<?= $escaper->escapeHtmlAttr(__('Apartment, suite, etc. (optional)')) ?>"
+                   class="w-full border border-gray-300 rounded-lg px-4 py-2.5 text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500"/>
+        </div>
+
+        <div class="grid grid-cols-2 gap-4 mb-4">
+            <!-- Postcode -->
+            <div>
+                <label for="postcode" class="block text-sm font-medium text-gray-700 mb-1">
+                    <?= $escaper->escapeHtml(__('Postcode')) ?> <span class="text-red-500">*</span>
+                </label>
+                <input type="text"
+                       id="postcode"
+                       name="postcode"
+                       wire:model.defer="postcode"
+                       autocomplete="postal-code"
+                       inputmode="text"
+                       class="w-full border border-gray-300 rounded-lg px-4 py-2.5 text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                       required/>
+            </div>
+            <!-- City -->
+            <div>
+                <label for="city" class="block text-sm font-medium text-gray-700 mb-1">
+                    <?= $escaper->escapeHtml(__('City')) ?> <span class="text-red-500">*</span>
+                </label>
+                <input type="text"
+                       id="city"
+                       name="city"
+                       wire:model.defer="city"
+                       autocomplete="address-level2"
+                       class="w-full border border-gray-300 rounded-lg px-4 py-2.5 text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                       required/>
+            </div>
+        </div>
+
+        <!-- Country -->
+        <div class="mb-4">
+            <label for="country_id" class="block text-sm font-medium text-gray-700 mb-1">
+                <?= $escaper->escapeHtml(__('Country')) ?> <span class="text-red-500">*</span>
+            </label>
+            <select id="country_id"
+                    name="country_id"
+                    wire:model="countryId"
+                    autocomplete="country"
+                    class="w-full border border-gray-300 rounded-lg px-4 py-2.5 text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white">
+                <?php
+                /** @var \Magento\Directory\Block\Data $directoryBlock */
+                $countryOptions = \Magento\Framework\App\ObjectManager::getInstance()
+                    ->get(\Magento\Directory\Model\ResourceModel\Country\Collection::class)
+                    ->loadByStore()
+                    ->toOptionArray(false);
+                foreach ($countryOptions as $opt):
+                    if (empty($opt['value'])) continue;
+                ?>
+                <option value="<?= $escaper->escapeHtmlAttr($opt['value']) ?>"><?= $escaper->escapeHtml($opt['label']) ?></option>
+                <?php endforeach ?>
+            </select>
+        </div>
+
+        <!-- Telephone -->
+        <div class="mb-4">
+            <label for="telephone" class="block text-sm font-medium text-gray-700 mb-1">
+                <?= $escaper->escapeHtml(__('Phone number')) ?> <span class="text-red-500">*</span>
+            </label>
+            <input type="tel"
+                   id="telephone"
+                   name="telephone"
+                   wire:model.defer="telephone"
+                   autocomplete="tel"
+                   class="w-full border border-gray-300 rounded-lg px-4 py-2.5 text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                   required/>
+        </div>
+
+        <!-- Billing same as shipping toggle -->
+        <div class="mb-6 flex items-center gap-3">
+            <input type="checkbox"
+                   id="billing_same"
+                   wire:model="billingSameAsShipping"
+                   class="w-4 h-4 rounded border-gray-300 text-blue-600 focus:ring-blue-500"/>
+            <label for="billing_same" class="text-sm text-gray-700">
+                <?= $escaper->escapeHtml(__('Billing address same as shipping')) ?>
+            </label>
+        </div>
+
+        <!-- Separate billing address fields -->
+        <div x-show="!$wire.billingSameAsShipping" x-cloak class="mb-6 p-4 bg-gray-50 rounded-xl border border-gray-200 space-y-4">
+            <h3 class="text-sm font-semibold text-gray-900"><?= $escaper->escapeHtml(__('Billing address')) ?></h3>
+
+            <div class="grid grid-cols-2 gap-4">
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-1"><?= $escaper->escapeHtml(__('First name')) ?></label>
+                    <input type="text" wire:model.defer="billingFirstname" autocomplete="billing given-name"
+                           class="w-full border border-gray-300 rounded-lg px-4 py-2.5 text-sm focus:ring-2 focus:ring-blue-500"/>
+                </div>
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-1"><?= $escaper->escapeHtml(__('Last name')) ?></label>
+                    <input type="text" wire:model.defer="billingLastname" autocomplete="billing family-name"
+                           class="w-full border border-gray-300 rounded-lg px-4 py-2.5 text-sm focus:ring-2 focus:ring-blue-500"/>
+                </div>
+            </div>
+            <div>
+                <label class="block text-sm font-medium text-gray-700 mb-1"><?= $escaper->escapeHtml(__('Street address')) ?></label>
+                <input type="text" wire:model.defer="billingStreet1" autocomplete="billing address-line1"
+                       class="w-full border border-gray-300 rounded-lg px-4 py-2.5 text-sm focus:ring-2 focus:ring-blue-500"/>
+            </div>
+            <div class="grid grid-cols-2 gap-4">
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-1"><?= $escaper->escapeHtml(__('Postcode')) ?></label>
+                    <input type="text" wire:model.defer="billingPostcode" autocomplete="billing postal-code"
+                           class="w-full border border-gray-300 rounded-lg px-4 py-2.5 text-sm focus:ring-2 focus:ring-blue-500"/>
+                </div>
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-1"><?= $escaper->escapeHtml(__('City')) ?></label>
+                    <input type="text" wire:model.defer="billingCity" autocomplete="billing address-level2"
+                           class="w-full border border-gray-300 rounded-lg px-4 py-2.5 text-sm focus:ring-2 focus:ring-blue-500"/>
+                </div>
+            </div>
+        </div>
+
+        <!-- Submit -->
+        <button type="submit"
+                class="w-full bg-blue-600 text-white font-semibold py-3 px-6 rounded-xl hover:bg-blue-700 active:bg-blue-800 transition-colors disabled:opacity-60 disabled:cursor-not-allowed"
+                wire:loading.attr="disabled"
+                wire:loading.class="opacity-60 cursor-not-allowed">
+            <span wire:loading.remove><?= $escaper->escapeHtml(__('Continue to shipping')) ?></span>
+            <span wire:loading class="flex items-center justify-center gap-2">
+                <svg class="animate-spin w-4 h-4" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                    <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                    <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"></path>
+                </svg>
+                <?= $escaper->escapeHtml(__('Saving...')) ?>
+            </span>
+        </button>
+
+    </form>
+
+</div>

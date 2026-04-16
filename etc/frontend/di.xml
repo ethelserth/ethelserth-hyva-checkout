@@ -1,0 +1,21 @@
+<?xml version="1.0"?>
+<config xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+        xsi:noNamespaceSchemaLocation="urn:magento:framework:ObjectManager/etc/config.xsd">
+
+    <!-- Guest session: quote token stored in cookie -->
+    <type name="Ethelserth\Checkout\Service\GuestSessionService">
+        <arguments>
+            <argument name="cookieName" xsi:type="string">ethelserth_guest_quote</argument>
+        </arguments>
+    </type>
+
+    <!-- Payment method pool: adapters registered here by PSP sub-modules -->
+    <type name="Ethelserth\Checkout\Model\Payment\MethodPool">
+        <arguments>
+            <argument name="adapters" xsi:type="array">
+                <item name="offline" xsi:type="object">Ethelserth\Checkout\Model\Payment\Adapter\Offline</item>
+            </argument>
+        </arguments>
+    </type>
+
+</config>

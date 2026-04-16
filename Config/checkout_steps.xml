@@ -1,0 +1,25 @@
+<?xml version="1.0"?>
+<checkout xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+          xsi:noNamespaceSchemaLocation="urn:magento:module:Ethelserth_Checkout:etc/checkout_steps.xsd">
+    <steps>
+        <step name="address"
+              label="Delivery"
+              magewire="Ethelserth\Checkout\Magewire\Step\Address"
+              template="Ethelserth_Checkout::checkout/step/address.phtml"
+              order="10"/>
+
+        <step name="shipping"
+              label="Shipping method"
+              magewire="Ethelserth\Checkout\Magewire\Step\Shipping"
+              template="Ethelserth_Checkout::checkout/step/shipping.phtml"
+              order="20"
+              unlock_on="addressSaved"/>
+
+        <step name="payment"
+              label="Payment"
+              magewire="Ethelserth\Checkout\Magewire\Step\Payment"
+              template="Ethelserth_Checkout::checkout/step/payment.phtml"
+              order="30"
+              unlock_on="shippingMethodSelected"/>
+    </steps>
+</checkout>
