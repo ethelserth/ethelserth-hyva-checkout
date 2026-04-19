@@ -23,6 +23,7 @@
                        template="Ethelserth_Checkout::checkout/step/address.phtml">
                     <arguments>
                         <argument name="magewire" xsi:type="object">Ethelserth\Checkout\Magewire\Step\Address</argument>
+                        <argument name="field_config" xsi:type="object">Ethelserth\Checkout\Model\Address\FieldConfig</argument>
                     </arguments>
                 </block>
 

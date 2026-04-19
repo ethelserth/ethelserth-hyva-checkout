@@ -1,0 +1,100 @@
+<?php
+/**
+ * Postcode lookup — compact inline row (NL only).
+ * Rendered via include from address/form.phtml.
+ *
+ * @var \Magento\Framework\View\Element\Template $block
+ * @var \Magento\Framework\Escaper $escaper
+ */
+declare(strict_types=1);
+
+$lookupUrl = $block->getUrl('checkout/postcode/lookup');
+?>
+
+<div x-data="{
+        pcPostcode: '',
+        pcNumber: '',
+        pcLoading: false,
+        pcError: null,
+        pcSuccess: null,
+        async pcLookup() {
+            if (!this.pcPostcode || !this.pcNumber) return;
+            this.pcLoading = true;
+            this.pcError   = null;
+            this.pcSuccess = null;
+            try {
+                const r = await fetch(
+                    '<?= $escaper->escapeJs($lookupUrl) ?>'
+                    + '?postcode=' + encodeURIComponent(this.pcPostcode.replace(/\s/g,''))
+                    + '&house_number=' + encodeURIComponent(this.pcNumber),
+                    { headers: { 'X-Requested-With': 'XMLHttpRequest' } }
+                );
+                const d = await r.json();
+                if (d.success) {
+                    $wire.set('street1', d.street + ' ' + d.house_number + (d.house_number_addition ? ' ' + d.house_number_addition : ''));
+                    $wire.set('city', d.city);
+                    if (d.region)      $wire.set('region', d.region);
+                    if (d.region_code) $wire.set('regionId', d.region_code);
+                    $wire.set('postcode', this.pcPostcode.toUpperCase().replace(/\s/g,''));
+                    this.pcSuccess = d.street + ' ' + d.house_number + (d.house_number_addition ? ' ' + d.house_number_addition : '') + ', ' + d.city;
+                } else {
+                    this.pcError = d.error ?? '<?= $escaper->escapeJs(__('Address not found.')) ?>';
+                }
+            } catch {
+                this.pcError = '<?= $escaper->escapeJs(__('Lookup failed. Please enter your address manually.')) ?>';
+            } finally {
+                this.pcLoading = false;
+            }
+        }
+     }"
+     x-show="$wire.countryId === 'NL'"
+     class="mb-3">
+
+    <div class="grid gap-2 mb-1" style="grid-template-columns:1fr 80px auto;align-items:end">
+        <div>
+            <label class="checkout-label"><?= $escaper->escapeHtml(__('Postcode')) ?></label>
+            <input type="text"
+                   x-model="pcPostcode"
+                   placeholder="1234 AB"
+                   autocomplete="off"
+                   inputmode="text"
+                   @keydown.enter.prevent="pcLookup()"
+                   class="checkout-input"/>
+        </div>
+        <div>
+            <label class="checkout-label"><?= $escaper->escapeHtml(__('No.')) ?></label>
+            <input type="text"
+                   x-model="pcNumber"
+                   placeholder="10A"
+                   autocomplete="off"
+                   inputmode="text"
+                   @keydown.enter.prevent="pcLookup()"
+                   class="checkout-input"/>
+        </div>
+        <div>
+            <button type="button"
+                    @click="pcLookup()"
+                    :disabled="pcLoading || !pcPostcode || !pcNumber"
+                    class="checkout-btn checkout-btn-secondary whitespace-nowrap">
+                <span x-show="!pcLoading"><?= $escaper->escapeHtml(__('Find')) ?></span>
+                <span x-show="pcLoading" style="display:none">
+                    <svg class="animate-spin" width="14" height="14" fill="none" viewBox="0 0 24 24">
+                        <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"/>
+                        <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"/>
+                    </svg>
+                </span>
+            </button>
+        </div>
+    </div>
+
+    <p x-show="pcSuccess" x-cloak class="flex items-center gap-1 checkout-hint">
+        <svg class="flex-shrink-0" width="12" height="12" fill="currentColor" viewBox="0 0 20 20" style="color:var(--color-primary)">
+            <path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd"/>
+        </svg>
+        <span x-text="pcSuccess"></span>
+    </p>
+
+    <p x-show="pcError" x-cloak x-text="pcError" role="alert"
+       class="checkout-hint" style="color:#b91c1c"></p>
+
+</div>

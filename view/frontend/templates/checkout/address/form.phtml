@@ -1,0 +1,281 @@
+<?php
+/**
+ * Address form fields — rendered via include from step/address.phtml.
+ * All variables listed below are populated in step/address.phtml and
+ * are in scope because include() shares the enclosing PHP scope.
+ *
+ * @var \Magento\Framework\View\Element\Template $block
+ * @var \Magento\Framework\Escaper $escaper
+ * @var \Ethelserth\Checkout\Magewire\Step\Address $magewire
+ * @var \Ethelserth\Checkout\Model\Address\FieldConfig $fieldConfig
+ * @var array  $countryOptions
+ * @var array  $regions
+ * @var string $countryId
+ * @var string $regionId
+ * @var bool   $isRegionRequired
+ * @var string $postcodeXData       Alpine x-data JSON for shipping postcode live-validation
+ * @var string $phoneFormatsJson    Per-country phone example digits (JSON)
+ */
+declare(strict_types=1);
+
+$streetLines = $fieldConfig->getStreetLines();
+?>
+
+<div class="mb-3">
+    <label for="checkout-email" class="checkout-label">
+        <?= $escaper->escapeHtml(__('Email address')) ?><span class="req">*</span>
+    </label>
+    <input type="email" id="checkout-email" name="email"
+           wire:model.defer="email"
+           autocomplete="email" inputmode="email" required
+           class="checkout-input"/>
+</div>
+
+<div class="checkout-divider"><?= $escaper->escapeHtml(__('Delivery address')) ?></div>
+
+<?php if ($fieldConfig->isFieldVisible('prefix')): ?>
+<div class="mb-3">
+    <label for="checkout-prefix" class="checkout-label">
+        <?= $escaper->escapeHtml(__('Prefix')) ?>
+        <?php if ($fieldConfig->isFieldRequired('prefix')): ?><span class="req">*</span><?php endif ?>
+    </label>
+    <input type="text" id="checkout-prefix" name="prefix"
+           wire:model.defer="prefix"
+           autocomplete="honorific-prefix"
+           <?= $fieldConfig->isFieldRequired('prefix') ? 'required' : '' ?>
+           class="checkout-input"/>
+</div>
+<?php endif ?>
+
+<?php if ($fieldConfig->isPostcodeLookupEnabled()):
+    $postcodeLookupTemplate = $block->getTemplateFile('Ethelserth_Checkout::checkout/address/postcode-lookup.phtml');
+    if ($postcodeLookupTemplate) include $postcodeLookupTemplate;
+endif ?>
+
+<!-- First / Middle / Last name -->
+<div class="grid <?= $fieldConfig->isFieldVisible('middlename') ? 'grid-cols-3' : 'grid-cols-2' ?> gap-3 mb-3">
+    <div>
+        <label for="checkout-firstname" class="checkout-label">
+            <?= $escaper->escapeHtml(__('First name')) ?><span class="req">*</span>
+        </label>
+        <input type="text" id="checkout-firstname" name="firstname"
+               wire:model.defer="firstname"
+               autocomplete="given-name" required
+               class="checkout-input"/>
+    </div>
+    <?php if ($fieldConfig->isFieldVisible('middlename')): ?>
+    <div>
+        <label for="checkout-middlename" class="checkout-label"><?= $escaper->escapeHtml(__('Middle name')) ?></label>
+        <input type="text" id="checkout-middlename" name="middlename"
+               wire:model.defer="middlename"
+               autocomplete="additional-name"
+               class="checkout-input"/>
+    </div>
+    <?php endif ?>
+    <div>
+        <label for="checkout-lastname" class="checkout-label">
+            <?= $escaper->escapeHtml(__('Last name')) ?><span class="req">*</span>
+        </label>
+        <input type="text" id="checkout-lastname" name="lastname"
+               wire:model.defer="lastname"
+               autocomplete="family-name" required
+               class="checkout-input"/>
+    </div>
+</div>
+
+<?php if ($fieldConfig->isFieldVisible('suffix')): ?>
+<div class="mb-3">
+    <label for="checkout-suffix" class="checkout-label">
+        <?= $escaper->escapeHtml(__('Suffix')) ?>
+        <?php if ($fieldConfig->isFieldRequired('suffix')): ?><span class="req">*</span><?php endif ?>
+    </label>
+    <input type="text" id="checkout-suffix" name="suffix"
+           wire:model.defer="suffix"
+           autocomplete="honorific-suffix"
+           <?= $fieldConfig->isFieldRequired('suffix') ? 'required' : '' ?>
+           class="checkout-input"/>
+</div>
+<?php endif ?>
+
+<?php if ($fieldConfig->isFieldVisible('company')): ?>
+<div class="mb-3">
+    <label for="checkout-company" class="checkout-label">
+        <?= $escaper->escapeHtml(__('Company')) ?>
+        <?php if (!$fieldConfig->isFieldRequired('company')): ?><span class="opt">(<?= $escaper->escapeHtml(__('optional')) ?>)</span><?php endif ?>
+    </label>
+    <input type="text" id="checkout-company" name="company"
+           wire:model.defer="company"
+           autocomplete="organization"
+           <?= $fieldConfig->isFieldRequired('company') ? 'required' : '' ?>
+           class="checkout-input"/>
+</div>
+<?php endif ?>
+
+<?php if ($fieldConfig->isFieldVisible('vat_id')): ?>
+<div class="mb-3">
+    <label for="checkout-vat-id" class="checkout-label">
+        <?= $escaper->escapeHtml(__('VAT number')) ?>
+        <?php if (!$fieldConfig->isFieldRequired('vat_id')): ?><span class="opt">(<?= $escaper->escapeHtml(__('optional')) ?>)</span><?php endif ?>
+    </label>
+    <input type="text" id="checkout-vat-id" name="vat_id"
+           wire:model.defer="vatId"
+           autocomplete="off" placeholder="NL123456789B01"
+           <?= $fieldConfig->isFieldRequired('vat_id') ? 'required' : '' ?>
+           class="checkout-input font-mono"/>
+    <p class="checkout-hint">
+        <?= $escaper->escapeHtml(__('EU businesses: enter your VAT number to apply 0% intra-EU VAT.')) ?>
+    </p>
+</div>
+<?php endif ?>
+
+<?php if ($streetLines >= 2): ?>
+<div class="grid grid-cols-2 gap-3 mb-<?= $streetLines > 2 ? '2' : '3' ?>">
+    <div>
+        <label for="checkout-street1" class="checkout-label">
+            <?= $escaper->escapeHtml(__('Street')) ?><span class="req">*</span>
+        </label>
+        <input type="text" id="checkout-street1" name="street1"
+               wire:model.defer="street1"
+               autocomplete="address-line1" required
+               class="checkout-input"/>
+    </div>
+    <div>
+        <label for="checkout-street2" class="checkout-label">
+            <?= $escaper->escapeHtml(__('Addition')) ?>
+            <span class="opt">(<?= $escaper->escapeHtml(__('optional')) ?>)</span>
+        </label>
+        <input type="text" id="checkout-street2" name="street2"
+               wire:model.defer="street2"
+               autocomplete="address-line2"
+               class="checkout-input"/>
+    </div>
+</div>
+<?php for ($i = 3; $i <= $streetLines; $i++): ?>
+<div class="mb-<?= $i < $streetLines ? '2' : '3' ?>">
+    <input type="text" id="checkout-street<?= $i ?>" name="street<?= $i ?>"
+           wire:model.defer="street<?= $i ?>"
+           autocomplete="address-line<?= $i ?>"
+           placeholder="<?= $escaper->escapeHtmlAttr(__('Address line %1 (optional)', $i)) ?>"
+           class="checkout-input"/>
+</div>
+<?php endfor ?>
+<?php else: ?>
+<div class="mb-3">
+    <label for="checkout-street1" class="checkout-label">
+        <?= $escaper->escapeHtml(__('Street')) ?><span class="req">*</span>
+    </label>
+    <input type="text" id="checkout-street1" name="street1"
+           wire:model.defer="street1"
+           autocomplete="address-line1" required
+           class="checkout-input"/>
+</div>
+<?php endif ?>
+
+<!-- City + Country -->
+<div class="grid grid-cols-2 gap-3 mb-3">
+    <div>
+        <label for="checkout-city" class="checkout-label">
+            <?= $escaper->escapeHtml(__('City')) ?><span class="req">*</span>
+        </label>
+        <input type="text" id="checkout-city" name="city"
+               wire:model.defer="city"
+               autocomplete="address-level2" required
+               class="checkout-input"/>
+    </div>
+    <div>
+        <label for="checkout-country" class="checkout-label">
+            <?= $escaper->escapeHtml(__('Country')) ?><span class="req">*</span>
+        </label>
+        <select id="checkout-country" name="country_id"
+                wire:model="countryId"
+                autocomplete="country" required
+                class="checkout-input">
+            <?php foreach ($countryOptions as $opt):
+                if (empty($opt['value'])) continue; ?>
+            <option value="<?= $escaper->escapeHtmlAttr($opt['value']) ?>"
+                    <?= $opt['value'] === $countryId ? 'selected' : '' ?>>
+                <?= $escaper->escapeHtml($opt['label']) ?>
+            </option>
+            <?php endforeach ?>
+        </select>
+    </div>
+</div>
+
+<!-- Postcode + Region/State -->
+<?php if (!empty($regions)): ?>
+<div class="grid grid-cols-2 gap-3 mb-3">
+    <div x-data="<?= $escaper->escapeHtmlAttr($postcodeXData) ?>">
+        <label for="checkout-postcode" class="checkout-label">
+            <?= $escaper->escapeHtml(__('Postcode')) ?><span class="req">*</span>
+        </label>
+        <input type="text" id="checkout-postcode" name="postcode"
+               x-model="value"
+               wire:model.defer="postcode"
+               autocomplete="postal-code" inputmode="text" required
+               class="checkout-input"/>
+        <p class="checkout-field-error" x-show="err" x-text="err" x-cloak></p>
+    </div>
+    <div>
+        <label for="checkout-region" class="checkout-label">
+            <?= $escaper->escapeHtml(__('State / Province')) ?>
+            <?php if ($isRegionRequired): ?><span class="req">*</span><?php endif ?>
+        </label>
+        <select id="checkout-region" name="region_id"
+                wire:model.defer="regionId"
+                <?= $isRegionRequired ? 'required' : '' ?>
+                class="checkout-input">
+            <option value=""><?= $escaper->escapeHtml(__('-- Please select --')) ?></option>
+            <?php foreach ($regions as $r): ?>
+            <option value="<?= $escaper->escapeHtmlAttr($r['value']) ?>"
+                    <?= (string)$r['value'] === $regionId ? 'selected' : '' ?>>
+                <?= $escaper->escapeHtml($r['label']) ?>
+            </option>
+            <?php endforeach ?>
+        </select>
+    </div>
+</div>
+<?php else: ?>
+<div class="mb-3" x-data="<?= $escaper->escapeHtmlAttr($postcodeXData) ?>">
+    <label for="checkout-postcode" class="checkout-label">
+        <?= $escaper->escapeHtml(__('Postcode')) ?><span class="req">*</span>
+    </label>
+    <input type="text" id="checkout-postcode" name="postcode"
+           x-model="value"
+           wire:model.defer="postcode"
+           autocomplete="postal-code" inputmode="text" required
+           class="checkout-input"/>
+    <p class="checkout-field-error" x-show="err" x-text="err" x-cloak></p>
+</div>
+<?php endif ?>
+
+<?php if ($fieldConfig->isFieldVisible('telephone')): ?>
+<div class="mb-3"
+     x-data='{ formats: <?= /* @noEscape */ $phoneFormatsJson ?>, get example() { return this.formats[this.$wire.countryId] || ""; } }'>
+    <label for="checkout-telephone" class="checkout-label">
+        <?= $escaper->escapeHtml(__('Phone')) ?>
+        <?php if (!$fieldConfig->isFieldRequired('telephone')): ?><span class="opt">(<?= $escaper->escapeHtml(__('optional')) ?>)</span><?php endif ?>
+    </label>
+    <input type="tel" id="checkout-telephone" name="telephone"
+           wire:model.defer="telephone"
+           @input="$event.target.value = $event.target.value.replace(/\D+/g, '')"
+           :placeholder="example"
+           autocomplete="tel" inputmode="numeric" pattern="[0-9]*"
+           <?= $fieldConfig->isFieldRequired('telephone') ? 'required' : '' ?>
+           class="checkout-input"/>
+    <p class="checkout-hint"><?= $escaper->escapeHtml(__('Digits only.')) ?></p>
+</div>
+<?php endif ?>
+
+<?php if ($fieldConfig->isFieldVisible('fax')): ?>
+<div class="mb-3">
+    <label for="checkout-fax" class="checkout-label">
+        <?= $escaper->escapeHtml(__('Fax')) ?>
+        <?php if (!$fieldConfig->isFieldRequired('fax')): ?><span class="opt">(<?= $escaper->escapeHtml(__('optional')) ?>)</span><?php endif ?>
+    </label>
+    <input type="tel" id="checkout-fax" name="fax"
+           wire:model.defer="fax"
+           autocomplete="fax"
+           <?= $fieldConfig->isFieldRequired('fax') ? 'required' : '' ?>
+           class="checkout-input"/>
+</div>
+<?php endif ?>

@@ -1,0 +1,39 @@
+<?php
+/**
+ * Saved address selector for logged-in customers.
+ * Rendered via include from step/address.phtml.
+ *
+ * @var \Magento\Framework\View\Element\Template $block
+ * @var \Magento\Framework\Escaper $escaper
+ * @var \Magento\Customer\Api\Data\AddressInterface[] $savedAddresses
+ */
+declare(strict_types=1);
+
+if (empty($savedAddresses)) {
+    return;
+}
+?>
+
+<div class="mb-5">
+    <div class="checkout-divider"><?= $escaper->escapeHtml(__('Your saved addresses')) ?></div>
+    <div class="space-y-2">
+        <?php foreach ($savedAddresses as $address):
+            $id    = (int) $address->getId();
+            $label = implode(', ', array_filter([
+                $address->getFirstname() . ' ' . $address->getLastname(),
+                implode(' ', $address->getStreet() ?: []),
+                $address->getPostcode(),
+                $address->getCity(),
+            ]));
+        ?>
+        <button type="button"
+                wire:click="selectSavedAddress(<?= $id ?>)"
+                class="checkout-choice w-full text-left">
+            <span class="checkout-choice-title"><?= $escaper->escapeHtml($label) ?></span>
+        </button>
+        <?php endforeach ?>
+    </div>
+    <p class="checkout-hint">
+        <?= $escaper->escapeHtml(__('Select an address to pre-fill the form, then edit if needed.')) ?>
+    </p>
+</div>

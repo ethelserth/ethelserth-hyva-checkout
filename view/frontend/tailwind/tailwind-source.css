@@ -1,0 +1,358 @@
+/**
+ * Ethelserth_Checkout — module-scoped styles
+ *
+ * Built strictly on the Hyvä default theme's design tokens:
+ *   --color-primary, --color-on-primary
+ *   --color-surface, --color-bg, --color-fg, --color-fg-secondary
+ *   --form-radius, --form-stroke, --form-active-color
+ *   --radius-lg, --radius-md
+ *   --color-gray-* / --color-slate-*
+ *
+ * We don't touch child-theme (RedGoat) variables — this module must work
+ * across any Hyvä-compatible storefront. If the host theme wants a dark
+ * editorial look, it should expose that via the Hyvä tokens above.
+ */
+
+@layer components {
+
+    /* ──────────────────────────────────────────────────────────────
+       Step card — outer wrapper for each checkout step.
+       ────────────────────────────────────────────────────────────── */
+    .checkout-section {
+        position: relative;
+        border-radius: var(--radius-lg);
+        border: 1px solid var(--color-gray-200);
+        background-color: var(--color-surface);
+        overflow: hidden;
+        transition: border-color 200ms ease, box-shadow 200ms ease;
+    }
+
+    .checkout-section.is-locked {
+        opacity: 0.75;
+    }
+
+    .checkout-section-header {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        padding: 1rem 1.25rem;
+        border-bottom: 1px solid var(--color-gray-100);
+    }
+
+    .checkout-section.is-locked .checkout-section-header {
+        background-color: var(--color-gray-50);
+        border-bottom-color: transparent;
+    }
+
+    .checkout-section-body {
+        padding: 1.25rem;
+    }
+
+    /* Numeric badge next to the step label. */
+    .checkout-step-badge {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        width: 1.75rem;
+        height: 1.75rem;
+        border-radius: 9999px;
+        font-size: 0.8rem;
+        font-weight: 500;
+        background-color: var(--color-gray-200);
+        color: var(--color-fg-secondary);
+        transition: background-color 200ms ease, color 200ms ease;
+    }
+
+    .checkout-section.is-active .checkout-step-badge,
+    .checkout-section.is-done .checkout-step-badge {
+        background-color: var(--color-primary);
+        color: var(--color-on-primary);
+    }
+
+    .checkout-step-title {
+        font-size: 1rem;
+        font-weight: 600;
+        color: var(--color-fg);
+    }
+
+    .checkout-section.is-locked .checkout-step-title {
+        color: var(--color-fg-secondary);
+        font-weight: 500;
+    }
+
+    .checkout-edit-btn {
+        font-size: 0.8rem;
+        font-weight: 500;
+        color: var(--color-primary);
+        background: transparent;
+        border: none;
+        cursor: pointer;
+        transition: color 200ms ease;
+    }
+
+    .checkout-edit-btn:hover {
+        color: var(--color-primary, var(--color-slate-700));
+        text-decoration: underline;
+        text-underline-offset: 2px;
+    }
+
+    /* ──────────────────────────────────────────────────────────────
+       Form primitives
+       ────────────────────────────────────────────────────────────── */
+
+    .checkout-input {
+        width: 100%;
+        background-color: var(--color-gray-50);
+        color: var(--color-fg);
+        font-size: 0.875rem;
+        line-height: 1.25rem;
+        padding: 0.625rem 0.875rem;
+        border: 1px solid var(--color-gray-200);
+        border-radius: var(--form-radius, var(--radius-md));
+        transition: border-color 200ms ease, background-color 200ms ease,
+            box-shadow 200ms ease;
+    }
+
+    .checkout-input::placeholder {
+        color: color-mix(in srgb, var(--color-fg-secondary) 55%, transparent);
+    }
+
+    .checkout-input:focus {
+        outline: none;
+        background-color: var(--color-surface);
+        border-color: var(--form-active-color, var(--color-primary));
+        box-shadow: 0 0 0 3px
+            color-mix(in srgb, var(--form-active-color, var(--color-primary)) 18%, transparent);
+    }
+
+    .checkout-input:disabled {
+        opacity: 0.6;
+    }
+
+    .checkout-label {
+        display: block;
+        font-size: 0.75rem;
+        font-weight: 500;
+        color: var(--color-fg-secondary);
+        margin-bottom: 0.375rem;
+    }
+
+    .checkout-label .req {
+        color: #dc2626;
+        margin-left: 0.15rem;
+    }
+
+    .checkout-label .opt {
+        color: color-mix(in srgb, var(--color-fg-secondary) 65%, transparent);
+        font-weight: 400;
+        margin-left: 0.25rem;
+    }
+
+    .checkout-hint {
+        font-size: 0.75rem;
+        color: var(--color-fg-secondary);
+        margin-top: 0.375rem;
+    }
+
+    .checkout-error {
+        font-size: 0.8rem;
+        color: #b91c1c;
+        padding: 0.75rem 1rem;
+        background-color: color-mix(in srgb, #dc2626 8%, transparent);
+        border: 1px solid color-mix(in srgb, #dc2626 30%, transparent);
+        border-radius: var(--radius-md);
+    }
+
+    .checkout-field-error {
+        font-size: 0.75rem;
+        color: #b91c1c;
+        margin-top: 0.25rem;
+    }
+
+    /* ──────────────────────────────────────────────────────────────
+       Choice card — for "billing same as delivery" and similar rows.
+       ────────────────────────────────────────────────────────────── */
+    .checkout-choice {
+        display: flex;
+        align-items: flex-start;
+        gap: 0.75rem;
+        padding: 0.875rem 1rem;
+        background-color: var(--color-gray-50);
+        border: 1px solid var(--color-gray-200);
+        border-radius: var(--radius-md);
+        cursor: pointer;
+        transition: border-color 200ms ease, background-color 200ms ease;
+    }
+
+    .checkout-choice:hover {
+        border-color: color-mix(in srgb, var(--color-primary) 35%, transparent);
+    }
+
+    .checkout-choice-title {
+        font-size: 0.875rem;
+        font-weight: 500;
+        color: var(--color-fg);
+    }
+
+    .checkout-choice-sub {
+        font-size: 0.75rem;
+        color: var(--color-fg-secondary);
+        margin-top: 0.15rem;
+    }
+
+    /* ──────────────────────────────────────────────────────────────
+       Section divider inside a form ("Delivery address" / "Billing")
+       ────────────────────────────────────────────────────────────── */
+    .checkout-divider {
+        display: flex;
+        align-items: center;
+        gap: 0.75rem;
+        margin: 1rem 0;
+        font-size: 0.75rem;
+        font-weight: 500;
+        color: var(--color-fg-secondary);
+    }
+
+    .checkout-divider::before,
+    .checkout-divider::after {
+        content: "";
+        flex: 1;
+        border-top: 1px solid var(--color-gray-200);
+    }
+
+    /* ──────────────────────────────────────────────────────────────
+       Guest / Sign-in tab row
+       ────────────────────────────────────────────────────────────── */
+    .checkout-tabs {
+        display: flex;
+        border: 1px solid var(--color-gray-200);
+        border-radius: var(--radius-md);
+        overflow: hidden;
+        margin-bottom: 1.25rem;
+    }
+
+    .checkout-tabs > * {
+        flex: 1;
+        padding: 0.625rem 1rem;
+        text-align: center;
+        font-size: 0.8rem;
+        font-weight: 600;
+        text-decoration: none;
+        color: var(--color-fg-secondary);
+        background: transparent;
+        transition: background-color 200ms ease, color 200ms ease;
+    }
+
+    .checkout-tabs > .is-active {
+        background-color: var(--color-primary);
+        color: var(--color-on-primary);
+    }
+
+    .checkout-tabs > a:hover:not(.is-active) {
+        background-color: var(--color-gray-50);
+        color: var(--color-fg);
+    }
+
+    /* ──────────────────────────────────────────────────────────────
+       Buttons
+       We ship a checkout-specific CTA that uses the primary token,
+       matching how Hyvä's .btn-primary utility composes tokens. The
+       host theme may override .btn-primary independently; this keeps
+       checkout buttons consistent across stores.
+       ────────────────────────────────────────────────────────────── */
+    .checkout-btn {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        gap: 0.5rem;
+        padding: 0.625rem 1.25rem;
+        font-size: 0.875rem;
+        font-weight: 600;
+        line-height: 1.25rem;
+        border-radius: var(--radius-md);
+        border: 1px solid transparent;
+        background-color: var(--color-primary);
+        color: var(--color-on-primary);
+        cursor: pointer;
+        transition: background-color 200ms ease, border-color 200ms ease;
+    }
+
+    .checkout-btn:hover:not(:disabled) {
+        background-color: color-mix(in srgb, var(--color-primary) 85%, #000);
+    }
+
+    .checkout-btn:disabled {
+        opacity: 0.5;
+        cursor: not-allowed;
+    }
+
+    .checkout-btn-secondary {
+        background-color: var(--color-surface);
+        color: var(--color-fg);
+        border-color: var(--color-gray-200);
+    }
+
+    .checkout-btn-secondary:hover:not(:disabled) {
+        background-color: var(--color-gray-50);
+        border-color: var(--color-gray-300);
+    }
+
+    .checkout-btn-block {
+        width: 100%;
+        padding-block: 0.875rem;
+        font-size: 0.9375rem;
+    }
+
+    .checkout-link-muted {
+        font-size: 0.8rem;
+        color: var(--color-fg-secondary);
+        text-decoration: none;
+        transition: color 200ms ease;
+    }
+
+    .checkout-link-muted:hover {
+        color: var(--color-fg);
+        text-decoration: underline;
+        text-underline-offset: 2px;
+    }
+
+    /* ──────────────────────────────────────────────────────────────
+       Shipping option row
+       ────────────────────────────────────────────────────────────── */
+    .checkout-option {
+        display: flex;
+        align-items: center;
+        gap: 1rem;
+        padding: 1rem;
+        border: 1px solid var(--color-gray-200);
+        border-radius: var(--radius-md);
+        cursor: pointer;
+        transition: border-color 200ms ease, background-color 200ms ease;
+    }
+
+    .checkout-option:hover {
+        border-color: color-mix(in srgb, var(--color-primary) 30%, transparent);
+    }
+
+    .checkout-option.is-selected {
+        border-color: var(--color-primary);
+        background-color: color-mix(in srgb, var(--color-primary) 5%, transparent);
+    }
+
+    .checkout-option-price {
+        font-size: 0.9375rem;
+        font-weight: 600;
+        color: var(--color-fg);
+    }
+
+    /* ──────────────────────────────────────────────────────────────
+       Page title (above the steps)
+       ────────────────────────────────────────────────────────────── */
+    .checkout-title {
+        font-size: 1.5rem;
+        font-weight: 700;
+        line-height: 1.1;
+        color: var(--color-fg);
+        margin-bottom: 1.25rem;
+    }
+}

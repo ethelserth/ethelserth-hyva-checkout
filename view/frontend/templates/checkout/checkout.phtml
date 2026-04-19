@@ -12,55 +12,13 @@ $steps = $block->getSteps();
 $stepsJson = $block->getStepsJson();
 ?>
 
-<script>
-<?php
-// Alpine store — step state manager (visual only, no quote data)
-?>
-document.addEventListener('alpine:init', () => {
-    Alpine.store('checkout', {
-        steps: [],
-        currentStep: null,
-        doneSteps: [],
-
-        init(steps) {
-            this.steps = steps;
-            this.currentStep = steps[0]?.name ?? null;
-        },
-
-        isActive(name) { return this.currentStep === name; },
-        isDone(name)   { return this.doneSteps.includes(name); },
-
-        isLocked(name) {
-            const step = this.steps.find(s => s.name === name);
-            if (!step?.unlockOn) return false;
-            const idx = this.steps.findIndex(s => s.name === name);
-            if (idx <= 0) return false;
-            const prev = this.steps[idx - 1];
-            return !this.isDone(prev.name);
-        },
-
-        advance(from, to) {
-            if (!this.doneSteps.includes(from)) this.doneSteps.push(from);
-            this.currentStep = to;
-            const el = document.getElementById('checkout-step-' + to);
-            if (el) el.scrollIntoView({ behavior: 'smooth', block: 'start' });
-        },
-
-        reopenStep(name) {
-            const idx = this.steps.findIndex(s => s.name === name);
-            const toRemove = this.steps.slice(idx).map(s => s.name);
-            this.doneSteps = this.doneSteps.filter(n => !toRemove.includes(n));
-            this.currentStep = name;
-        },
-    });
-});
-</script>
+<script src="<?= $escaper->escapeUrl($block->getViewFileUrl('Ethelserth_Checkout::js/checkout/store.js')) ?>"></script>
 
 <div
     id="checkout-main"
     x-data
-    x-init="$store.checkout.init(<?= $escaper->escapeHtmlAttr($stepsJson) ?>)"
-    class="checkout-container max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8"
+    x-init="$store.checkout.setup(<?= $escaper->escapeHtmlAttr($stepsJson) ?>)"
+    class="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 py-6"
     @address-saved.window="$store.checkout.advance('address', 'shipping')"
     @shipping-method-selected.window="$store.checkout.advance('shipping', 'payment')"
     @step-edit-requested.window="$store.checkout.reopenStep($event.detail[0] ?? $event.detail)"
@@ -72,6 +30,8 @@ document.addEventListener('alpine:init', () => {
         <!-- Left: express rail + step sections -->
         <div class="lg:col-span-7">
 
+            <h1 class="checkout-title"><?= $escaper->escapeHtml(__('Checkout')) ?></h1>
+
             <!-- Express rail: populated by PSP modules (Revolut Fast Checkout, etc.) -->
             <?= $block->getChildHtml('checkout.express.rail') ?>
 
@@ -82,28 +42,18 @@ document.addEventListener('alpine:init', () => {
 
             <div
                 id="checkout-step-<?= $stepName ?>"
-                class="checkout-section mb-6 bg-white border border-gray-200 rounded-xl overflow-hidden"
+                class="checkout-section mb-3"
                 :class="{
                     'is-active': $store.checkout.isActive('<?= $stepName ?>'),
                     'is-done':   $store.checkout.isDone('<?= $stepName ?>'),
                     'is-locked': $store.checkout.isLocked('<?= $stepName ?>')
                 }"
             >
-                <!-- Section header -->
-                <div class="flex items-center justify-between px-6 py-4 border-b border-gray-100"
-                     :class="{
-                         'bg-gray-50': $store.checkout.isLocked('<?= $stepName ?>'),
-                         'bg-white':   !$store.checkout.isLocked('<?= $stepName ?>')
-                     }">
+                <div class="checkout-section-header">
                     <div class="flex items-center gap-3">
-                        <span class="inline-flex items-center justify-center w-7 h-7 rounded-full text-sm font-semibold"
-                              :class="{
-                                  'bg-green-500 text-white':  $store.checkout.isDone('<?= $stepName ?>'),
-                                  'bg-blue-600 text-white':   $store.checkout.isActive('<?= $stepName ?>'),
-                                  'bg-gray-200 text-gray-500': $store.checkout.isLocked('<?= $stepName ?>')
-                              }">
+                        <span class="checkout-step-badge">
                             <template x-if="$store.checkout.isDone('<?= $stepName ?>')">
-                                <svg xmlns="http://www.w3.org/2000/svg" class="w-4 h-4" viewBox="0 0 20 20" fill="currentColor">
+                                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 20 20" fill="currentColor">
                                     <path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd"/>
                                 </svg>
                             </template>
@@ -111,32 +61,24 @@ document.addEventListener('alpine:init', () => {
                                 <span><?= $stepOrder ?></span>
                             </template>
                         </span>
-                        <h2 class="text-base font-semibold"
-                            :class="{
-                                'text-gray-400': $store.checkout.isLocked('<?= $stepName ?>'),
-                                'text-gray-900': !$store.checkout.isLocked('<?= $stepName ?>')
-                            }">
-                            <?= $stepLabel ?>
-                        </h2>
+                        <h2 class="checkout-step-title"><?= $stepLabel ?></h2>
                     </div>
 
-                    <!-- Edit link shown when step is done -->
                     <button type="button"
                             x-show="$store.checkout.isDone('<?= $stepName ?>')"
                             x-cloak
                             @click="$store.checkout.reopenStep('<?= $stepName ?>')"
-                            class="text-sm text-blue-600 hover:text-blue-800 font-medium underline-offset-2 hover:underline">
+                            class="checkout-edit-btn">
                         <?= $escaper->escapeHtml(__('Edit')) ?>
                     </button>
                 </div>
 
-                <!-- Step body: only rendered when active -->
                 <div x-show="$store.checkout.isActive('<?= $stepName ?>')"
                      x-cloak
                      x-transition:enter="transition ease-out duration-200"
                      x-transition:enter-start="opacity-0 -translate-y-1"
                      x-transition:enter-end="opacity-100 translate-y-0"
-                     class="p-6">
+                     class="checkout-section-body">
                     <?= $block->getChildHtml('checkout.step.' . $step->getName()) ?>
                 </div>
 

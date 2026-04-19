@@ -12,7 +12,7 @@ document.addEventListener('alpine:init', () => {
         /** @type {string[]} */
         doneSteps: [],
 
-        init(steps) {
+        setup(steps) {
             this.steps = steps;
             this.currentStep = steps[0]?.name ?? null;
         },

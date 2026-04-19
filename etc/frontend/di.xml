@@ -17,4 +17,9 @@
         </arguments>
     </type>
 
+    <!-- Postcode lookup: Postcoder.com is the default provider.
+         Override this preference in a child module to swap providers. -->
+    <preference for="Ethelserth\Checkout\Model\Address\Lookup\LookupInterface"
+                type="Ethelserth\Checkout\Model\Address\Lookup\Postcoder"/>
+
 </config>
