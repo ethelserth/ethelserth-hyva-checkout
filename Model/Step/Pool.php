@@ -3,8 +3,6 @@ declare(strict_types=1);
 
 namespace Ethelserth\Checkout\Model\Step;
 
-use Magento\Framework\ObjectManagerInterface;
-
 class Pool
 {
     /** @var StepInterface[]|null */
@@ -12,7 +10,6 @@ class Pool
 
     public function __construct(
         private readonly Config $config,
-        private readonly ObjectManagerInterface $objectManager,
         private readonly StepFactory $stepFactory,
     ) {}
 

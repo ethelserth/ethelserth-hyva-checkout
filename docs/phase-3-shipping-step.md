@@ -68,11 +68,15 @@ Listeners:
 
 ```php
 protected $listeners = [
-    'addressSaved'           => 'onAddressSaved',
-    'stepEditRequested'      => 'onEditRequested',
-    'shippingMethodSelected' => 'onShippingMethodSelected',
+    'addressSaved'      => 'onAddressSaved',
+    'stepEditRequested' => 'onEditRequested',
 ];
 ```
+
+Only the two cross-step listeners remain. We used to also listen to
+`shippingMethodSelected` back when a second Magewire mount rendered the
+collapsed summary; that mount was dropped (see §5), so the listener went
+with it.
 
 ### `boot()` — runs on every Magewire request
 
@@ -99,24 +103,17 @@ address to a country the old carrier doesn't service).
 
 1. Calls `QuoteService::setShippingMethod()`.
 2. Calls `QuoteService::collectAndSave()` — this recomputes totals **and** re-fires the VAT validator (harmless but consistent).
-3. Emits `shippingMethodSelected` with both codes as arguments so
-   Alpine/Magewire receive them in `$event.detail`.
+3. `$this->emit('shippingMethodSelected', …)` — server-side Magewire listener channel. Any other component subscribing to it re-renders.
+4. `$this->dispatchBrowserEvent('shipping-method-selected', …)` — browser CustomEvent channel. This is what lets `@shipping-method-selected.window` in the root `checkout.phtml` fire `$store.checkout.advance('shipping', 'payment')`. **Both calls are required** — see §8 for the gotcha.
 
 Errors (bad rate, saving failure) are caught, logged, and surfaced as
 `$errorMessage` at the top of the step body.
 
-### `onShippingMethodSelected(string $carrier = '', string $method = '')`
-
-Intentional no-op. It exists so the **summary block mount** (a second
-Magewire instance of the same component class) re-renders when the main
-step emits. Magewire invokes the listener on every component that
-subscribes to the event; the re-render then re-runs `boot()`, which reads
-the freshly saved selection from the quote.
-
 ### `getSelectedSummary()` — template-facing
 
-Called from `shipping/summary.phtml`. Returns the decorated entry matching
-the selection. Falls back to a fresh `decorate()` pass against
+Called inline from `step/shipping.phtml` (the done-view block). Returns the
+decorated entry matching the selection by scanning `$methods` first, then
+falling back to a fresh `decorate()` pass against
 `QuoteService::getShippingRates()` so the summary survives a page refresh
 even when `$methods` hasn't been re-hydrated yet.
 
@@ -130,8 +127,8 @@ Turns `Rate[]` into the array shape the templates consume:
 
 | Key                | Source                                                             |
 |--------------------|---------------------------------------------------------------------|
-| `carrier`          | `Rate::getCarrierCode()`                                            |
-| `method`           | `Rate::getMethodCode()`                                             |
+| `carrier`          | `Rate::getCarrier()` — **not** `getCarrierCode()`; see §8           |
+| `method`           | `Rate::getMethod()` — **not** `getMethodCode()`; see §8             |
 | `code`             | `"<carrier>_<method>"` — matches Magento's stored `shipping_method` |
 | `carrier_title`    | `Rate::getCarrierTitle()` (falls back to code)                      |
 | `method_title`     | `Rate::getMethodTitle()` (falls back to code)                       |
@@ -217,7 +214,7 @@ postcode") is still rendered, but with:
 
 ---
 
-## 5. 3.4 — Layout Wiring + Done-Summary Slot
+## 5. 3.4 — Layout Wiring + Inline Done-Summary
 
 ### The problem
 
@@ -234,42 +231,86 @@ That's correct for forms, but the shipping step also needs a **collapsed
 summary** ("DHL Express Standard · €5.95") once it's done — something that
 lives in DOM even when the step is no longer active.
 
-### The fix — generic summary slot in the root template
+### The path not taken — second Magewire mount
 
-Root `checkout.phtml` now looks up an optional summary block:
+An earlier draft of this phase added a separate
+`checkout.step.shipping.summary` block — a second Magewire mount of the
+same component class rendered inside a generic done-summary slot in the
+root template. It **looked** clean (isolated template for the summary)
+but it produced a subtle race: both mounts subscribed to `addressSaved`,
+which meant every address save kicked off **two** concurrent shipping-rate
+collects against the same quote. One of them could produce a silent 500 on
+the wire XHR (symptom: clicking *Continue to shipping* did nothing, no JS
+console error). Debugging was slow because only the server log tells you
+there are two components under the same event.
 
-```php
-$summaryHtml = trim((string) $block->getChildHtml('checkout.step.' . $step->getName() . '.summary'));
+### The pattern we use — one mount, two sibling views
+
+`step/shipping.phtml` is **the only** Magewire mount of `Shipping` on the
+page. Its single root wrapper holds two siblings:
+
+```html
+<div>
+    <?php if ($errorMessage): ?>
+        <div role="alert" class="checkout-error mb-4">…</div>
+    <?php endif ?>
+
+    <!-- Active view: method list -->
+    <div x-show="$store.checkout.isActive('shipping')" x-cloak>
+        <div wire:loading>…skeleton…</div>
+        <div wire:loading.remove>…method list…</div>
+    </div>
+
+    <!-- Done view: collapsed summary -->
+    <?php if ($summary): ?>
+    <div x-show="$store.checkout.isDone('shipping')" x-cloak class="checkout-done-summary">
+        …logo + titles + price…
+    </div>
+    <?php endif ?>
+</div>
 ```
 
-If present, it renders inside an `x-show="$store.checkout.isDone(...)"`
-wrapper. If absent (e.g. the address step has no summary block today),
-`getChildHtml` returns an empty string and the whole slot is omitted.
+For both siblings to remain in the DOM across state transitions, the root
+`checkout.phtml` renders the body wrapper whenever the step is **active
+OR done**:
 
-### The summary block is a second Magewire mount
+```html
+<div x-show="$store.checkout.isActive('<stepName>') || $store.checkout.isDone('<stepName>')">
+    <?= $block->getChildHtml('checkout.step.<name>') ?>
+</div>
+```
+
+Because that rule widens visibility for every step, each step template
+gates its own active content with its own `x-show="isActive(...)"` to
+avoid "address form still showing under the done header" bleed. The
+address step follows the same sibling pattern as shipping (active form +
+collapsed summary within one root; see `Address::getAddressSummary()`).
+
+### Why only one mount
+
+- **No dual rate-collect on `addressSaved`** — only one component
+  subscribes to the event, so one server round-trip recomputes rates.
+- **No cross-mount state sync story** — the single mount is self-evidently
+  the source of truth, no "does the summary reflect the main mount's
+  selection?" questions.
+- **Fewer listeners to maintain** — we don't need
+  `onShippingMethodSelected` just to nudge a second mount to re-render.
+
+### Layout XML
 
 ```xml
 <block class="Magento\Framework\View\Element\Template"
-       name="checkout.step.shipping.summary"
-       template="Ethelserth_Checkout::checkout/shipping/summary.phtml">
+       name="checkout.step.shipping"
+       template="Ethelserth_Checkout::checkout/step/shipping.phtml">
     <arguments>
         <argument name="magewire" xsi:type="object">Ethelserth\Checkout\Magewire\Step\Shipping</argument>
     </arguments>
 </block>
 ```
 
-This creates a *second* Shipping component instance on the page. The two
-instances are independent at the state level, but both run `boot()` which
-reads shared truth from the quote — so the summary instance reflects the
-saved selection without any manual syncing code.
-
-**Why the `shippingMethodSelected` listener exists:** after the main step
-instance persists a new selection, Magewire dispatches the event. Every
-component listening to it re-renders. Adding
-`'shippingMethodSelected' => 'onShippingMethodSelected'` to the listener
-map makes the summary instance's `boot()` run again, picking up the fresh
-state from the quote. The method body itself is empty — just declaring
-the listener is enough to trigger a re-render.
+That's all. No `.summary` block, no generic done-summary slot plumbing in
+the root template. The orphaned `shipping/summary.phtml` can be deleted
+safely whenever we next touch that directory.
 
 ---
 
@@ -341,7 +382,9 @@ Either way, this module stays honest about where shipping config lives.
 | Every Magewire template needs a single root tag | Magewire wraps the component's HTML with its own `wire:id` / state attributes, so the template must emit **exactly one** top-level element. An `if ($summary) return;` that short-circuits to empty output throws `Missing root tag when trying to render the Magewire component`. Keep a permanent root wrapper; gate the inner rendering instead. |
 | No duplicate Magento config | Shipping method titles/prices/countries live under `Sales > Shipping Methods`. Don't mirror them under `ethelserth_checkout/*`. If you catch yourself writing `<shipping>` inside our config, stop. |
 | Generic carrier handling | Never branch on `carrier === 'flatrate'`. If you need carrier-specific behaviour, use a DI override of `MethodDecorator` from a client module, not a core change here. |
-| Summary via second mount | The done-summary block is a second Magewire instance of the step component. Register the listener for the emit event (`shippingMethodSelected`) so the summary mount re-renders on selection. |
+| One Magewire mount per step | Never mount the same component twice on the page. Render both the active view and the collapsed summary as siblings inside one root tag and toggle them with `x-show`. See §5 for the race-condition story that motivated this rule. |
+| `emit()` ≠ browser event | Magewire has **two separate effect channels**. `$this->emit('foo')` only fires the `effects.emits` channel — server-side component-to-component. Browser `CustomEvent` listeners (`@foo.window` in Alpine) fire from `effects.dispatches` only, which comes from `$this->dispatchBrowserEvent('foo')`. Any cross-step transition that needs both a Magewire listener and an Alpine store update must call **both** methods in the PHP action. Symptom when you forget: address save succeeds, shipping XHR fires and returns new `methods`, but the shipping step never becomes visible because `$store.checkout.advance('address','shipping')` never ran. |
+| Rate accessors differ by entity | `Magento\Quote\Model\Quote\Address\RateResult\Method` (pre-import, produced by carrier models) exposes `getCarrierCode()` / `getMethodCode()`. `Magento\Quote\Model\Quote\Address\Rate` (post-import, what `ShippingAddress::getAllShippingRates()` returns) exposes `getCarrier()` / `getMethod()`. Calling `getCarrierCode()` on the address Rate silently returns `""` — there's no such field. `MethodDecorator` works on the address Rate, so use `getCarrier()` / `getMethod()`. |
 | `wire:loading` for skeletons | No manual `$loading` state. Toggle the skeleton with `wire:loading` on its wrapper and the real list with `wire:loading.remove`. |
 | Disabled rates stay visible | Rates that come back with an `error` still render, but without a click handler and in a muted style. Don't hide them — merchants and customers want to know the option was attempted. |
 | Price formatting goes through `PriceCurrencyInterface` | Don't write `"€" . number_format(...)`. Currencies vary by store and `0.0` should read as **Free**, which `formatPrice()` handles. |

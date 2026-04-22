@@ -7,7 +7,6 @@ use Ethelserth\Checkout\Model\Payment\MethodPool;
 use Ethelserth\Checkout\Model\Quote\QuoteService;
 use Magewirephp\Magewire\Component;
 use Magento\Checkout\Model\Session as CheckoutSession;
-use Magento\Quote\Api\CartManagementInterface;
 use Psr\Log\LoggerInterface;
 
 /**
@@ -32,7 +31,6 @@ class Payment extends Component
         private readonly CheckoutSession $checkoutSession,
         private readonly QuoteService $quoteService,
         private readonly MethodPool $methodPool,
-        private readonly CartManagementInterface $cartManagement,
         private readonly LoggerInterface $logger,
     ) {}
 
@@ -73,7 +71,7 @@ class Payment extends Component
 
         try {
             $quote   = $this->checkoutSession->getQuote();
-            $orderId = $this->quoteService->placeOrder($quote, $this->cartManagement);
+            $orderId = $this->quoteService->placeOrder($quote);
             $this->emit('orderPlaced', $orderId);
         } catch (\Magento\Framework\Exception\LocalizedException $e) {
             $this->dispatchErrorMessage($e->getMessage());

@@ -18,11 +18,17 @@ use Psr\Log\LoggerInterface;
  * nothing here is carrier-specific.
  *
  * Lifecycle:
- *   1. `boot()` pulls the saved method from the quote so a refresh keeps
- *      the user on the same spot.
- *   2. `onAddressSaved` listener re-fetches rates when the address step
- *      emits `addressSaved`.
- *   3. `selectMethod()` persists + emits `shippingMethodSelected`.
+ *   1. `boot()` restores the saved method and hydrates `methods` from rates
+ *      already persisted on the quote. It never contacts carriers — a fresh
+ *      collect would hammer real-time carrier APIs on every Magewire round
+ *      trip. Only falls back to a one-shot collect if the quote has an
+ *      address but no persisted rows (e.g. resumed session).
+ *   2. `onAddressSaved` listener re-reads persisted rates. The address
+ *      component's own `collectAndSave` already ran the carriers, so no
+ *      second collect is needed.
+ *   3. `selectMethod()` persists + emits `shippingMethodSelected`. Its
+ *      `collectAndSave` recomputes totals but doesn't re-run carriers
+ *      (the `collectShippingRates` flag is off by this point).
  *   4. `onEditRequested('shipping')` resets completion when the user
  *      clicks "Edit" on the step header.
  */
@@ -66,17 +72,21 @@ class Shipping extends Component
             $this->complete        = $carrier !== '' && $method !== '';
         }
 
-        // Load rates if the address step is already done (prevents an empty
-        // list on refresh). Address component writes a firstname on save.
-        if ($shipping->getFirstname()) {
-            $this->methods = $this->fetchDecoratedRates();
+        // Hydrate methods only when they aren't already carried in the Magewire
+        // snapshot (first render / page refresh). Never re-collect from carriers
+        // on a regular round-trip — rates already persist on the quote.
+        if (!$this->methods && $shipping->getFirstname()) {
+            $this->methods = $this->loadDecoratedRates();
         }
     }
 
     public function onAddressSaved(): void
     {
         $this->errorMessage = '';
-        $this->methods      = $this->fetchDecoratedRates();
+
+        // Address save has just run collectAndSave → rates are already on the
+        // quote. Re-read them, don't re-run carriers.
+        $this->methods = $this->loadDecoratedRates();
 
         // If a previously selected method vanished (address change invalidated
         // the carrier) clear the selection so the UI forces a re-pick.
@@ -142,9 +152,10 @@ class Shipping extends Component
         }
 
         // Methods array may be empty during a partial request — fall back to
-        // a fresh decorate pass so the summary still renders on refresh.
+        // persisted rates so the summary still renders on refresh without
+        // re-hitting carrier endpoints.
         $quote = $this->checkoutSession->getQuote();
-        $rates = $this->quoteService->getShippingRates($quote);
+        $rates = $this->quoteService->getPersistedShippingRates($quote);
         return $this->methodDecorator->findDecoratedByCode(
             $rates,
             $this->selectedCarrier,
@@ -153,16 +164,25 @@ class Shipping extends Component
     }
 
     /**
+     * Read persisted rates from the quote and decorate them. Falls back to a
+     * one-shot carrier collect only when the quote has an address but no
+     * persisted rows yet (e.g. resumed session).
+     *
      * @return array<int, array<string, mixed>>
      */
-    private function fetchDecoratedRates(): array
+    private function loadDecoratedRates(): array
     {
         try {
             $quote = $this->checkoutSession->getQuote();
-            $rates = $this->quoteService->getShippingRates($quote);
+            $rates = $this->quoteService->getPersistedShippingRates($quote);
+
+            if (!$rates && $quote->getShippingAddress()->getCountryId()) {
+                $rates = $this->quoteService->getShippingRates($quote);
+            }
+
             return $this->methodDecorator->decorate($rates);
         } catch (\Throwable $e) {
-            $this->logger->error('Shipping rate collection failed', ['exception' => $e]);
+            $this->logger->error('Shipping rate hydration failed', ['exception' => $e]);
             $this->errorMessage = (string) __('We could not load shipping options. Please verify your address.');
             return [];
         }

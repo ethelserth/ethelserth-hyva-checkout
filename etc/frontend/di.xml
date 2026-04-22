@@ -2,13 +2,6 @@
 <config xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
         xsi:noNamespaceSchemaLocation="urn:magento:framework:ObjectManager/etc/config.xsd">
 
-    <!-- Guest session: quote token stored in cookie -->
-    <type name="Ethelserth\Checkout\Service\GuestSessionService">
-        <arguments>
-            <argument name="cookieName" xsi:type="string">ethelserth_guest_quote</argument>
-        </arguments>
-    </type>
-
     <!-- Payment method pool: PSP adapters registered here by sub-modules (Viva, Revolut, etc.)
          Offline methods (checkmo, banktransfer, etc.) are auto-discovered by MethodPool itself. -->
     <type name="Ethelserth\Checkout\Model\Payment\MethodPool">

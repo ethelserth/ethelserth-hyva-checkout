@@ -3,6 +3,7 @@ declare(strict_types=1);
 
 namespace Ethelserth\Checkout\Model\Quote;
 
+use Magento\Quote\Api\CartManagementInterface;
 use Magento\Quote\Api\CartRepositoryInterface;
 use Magento\Quote\Api\Data\AddressInterface;
 use Magento\Quote\Api\Data\AddressInterfaceFactory;
@@ -19,6 +20,7 @@ class QuoteService
     public function __construct(
         private readonly CartRepositoryInterface $cartRepository,
         private readonly AddressInterfaceFactory $addressFactory,
+        private readonly CartManagementInterface $cartManagement,
         private readonly LoggerInterface $logger,
     ) {}
 
@@ -109,7 +111,9 @@ class QuoteService
     }
 
     /**
-     * Get available shipping rates for the quote (requires address already saved).
+     * Force a fresh rate collection — runs every enabled carrier's rating call.
+     * Expensive for real-time carriers (UPS/FedEx/DHL/PostNL). Only call this
+     * when the address has changed or no rates are persisted yet.
      *
      * @return Rate[]
      */
@@ -119,18 +123,27 @@ class QuoteService
         $shipping->setCollectShippingRates(true);
         $shipping->collectShippingRates();
 
-        return $shipping->getGroupedAllShippingRates()
-            ? array_merge(...array_values($shipping->getGroupedAllShippingRates()))
-            : [];
+        return $this->getPersistedShippingRates($quote);
+    }
+
+    /**
+     * Read rates already persisted on the quote shipping address. Does NOT
+     * contact carriers. Safe to call on every Magewire round-trip.
+     *
+     * @return Rate[]
+     */
+    public function getPersistedShippingRates(Quote $quote): array
+    {
+        $grouped = $quote->getShippingAddress()->getGroupedAllShippingRates();
+        return $grouped ? array_merge(...array_values($grouped)) : [];
     }
 
     /**
      * Place the order and return the order ID.
      */
-    public function placeOrder(Quote $quote, \Magento\Quote\Api\CartManagementInterface $cartManagement): int
+    public function placeOrder(Quote $quote): int
     {
-        $orderId = $cartManagement->placeOrder($quote->getId());
-        return (int) $orderId;
+        return (int) $this->cartManagement->placeOrder($quote->getId());
     }
 
     private function populateAddress(\Magento\Quote\Model\Quote\Address $address, array $data): void
