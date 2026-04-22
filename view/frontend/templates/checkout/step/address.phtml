@@ -57,9 +57,13 @@ $buildPostcodeXData = function (string $valueProp, string $countryProp) use ($po
 };
 $postcodeXData        = $buildPostcodeXData('postcode', 'countryId');
 $billingPostcodeXData = $buildPostcodeXData('billingPostcode', 'billingCountryId');
+
+$summary = $magewire->getAddressSummary();
 ?>
 
 <div>
+
+<div x-show="$store.checkout.isActive('address')" x-cloak>
 
     <?php if ($errorMessage): ?>
     <div role="alert" class="checkout-error mb-4">
@@ -112,5 +116,49 @@ $billingPostcodeXData = $buildPostcodeXData('billingPostcode', 'billingCountryId
         </div>
 
     </form>
+
+</div>
+
+<?php if ($summary): ?>
+<div x-show="$store.checkout.isDone('address')"
+     x-cloak
+     class="checkout-done-summary checkout-address-summary">
+    <div class="flex-1 min-w-0 space-y-0.5">
+        <p class="checkout-choice-title"><?= $escaper->escapeHtml($summary['name']) ?></p>
+        <?php if ($summary['email']): ?>
+        <p class="checkout-choice-sub"><?= $escaper->escapeHtml($summary['email']) ?></p>
+        <?php endif ?>
+        <?php if ($summary['company']): ?>
+        <p class="checkout-choice-sub"><?= $escaper->escapeHtml($summary['company']) ?></p>
+        <?php endif ?>
+        <?php foreach ($summary['street'] as $line): ?>
+        <p class="checkout-choice-sub"><?= $escaper->escapeHtml($line) ?></p>
+        <?php endforeach ?>
+        <?php if ($summary['city_line']): ?>
+        <p class="checkout-choice-sub"><?= $escaper->escapeHtml($summary['city_line']) ?></p>
+        <?php endif ?>
+        <?php if ($summary['country']): ?>
+        <p class="checkout-choice-sub"><?= $escaper->escapeHtml($summary['country']) ?></p>
+        <?php endif ?>
+        <?php if ($summary['telephone']): ?>
+        <p class="checkout-choice-sub"><?= $escaper->escapeHtml($summary['telephone']) ?></p>
+        <?php endif ?>
+        <?php if ($summary['vat_id']): ?>
+        <p class="checkout-choice-sub"><?= $escaper->escapeHtml(__('VAT: %1', $summary['vat_id'])) ?></p>
+        <?php endif ?>
+
+        <?php if ($summary['billing_differs']): ?>
+        <div class="mt-3 pt-3 border-t border-gray-100">
+            <p class="checkout-choice-title text-xs uppercase tracking-wide text-gray-500">
+                <?= $escaper->escapeHtml(__('Billing address')) ?>
+            </p>
+            <?php foreach ($summary['billing_lines'] as $line): ?>
+            <p class="checkout-choice-sub"><?= $escaper->escapeHtml($line) ?></p>
+            <?php endforeach ?>
+        </div>
+        <?php endif ?>
+    </div>
+</div>
+<?php endif ?>
 
 </div>

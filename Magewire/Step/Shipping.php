@@ -4,70 +4,114 @@ declare(strict_types=1);
 namespace Ethelserth\Checkout\Magewire\Step;
 
 use Ethelserth\Checkout\Model\Quote\QuoteService;
-use Magewirephp\Magewire\Component;
+use Ethelserth\Checkout\Model\Shipping\MethodDecorator;
 use Magento\Checkout\Model\Session as CheckoutSession;
+use Magewirephp\Magewire\Component;
+use Psr\Log\LoggerInterface;
 
 /**
  * Shipping step Magewire component.
- * Phase 1: stub — ready for Phase 3 method list.
+ *
+ * Owns rate fetching, decoration, and persistence of the selected method
+ * on the quote. Works against whatever Magento carriers the merchant has
+ * enabled in admin (flatrate, freeshipping, tablerate, custom carriers) —
+ * nothing here is carrier-specific.
+ *
+ * Lifecycle:
+ *   1. `boot()` pulls the saved method from the quote so a refresh keeps
+ *      the user on the same spot.
+ *   2. `onAddressSaved` listener re-fetches rates when the address step
+ *      emits `addressSaved`.
+ *   3. `selectMethod()` persists + emits `shippingMethodSelected`.
+ *   4. `onEditRequested('shipping')` resets completion when the user
+ *      clicks "Edit" on the step header.
  */
 class Shipping extends Component
 {
     public string $selectedCarrier = '';
-    public string $selectedMethod = '';
-    public bool $complete = false;
-    public bool $loading = false;
+    public string $selectedMethod  = '';
+    public bool   $complete        = false;
+    public string $errorMessage    = '';
 
-    /** @var array<int, array{carrier: string, method: string, carrier_title: string, method_title: string, price: float}> */
-    public array $rates = [];
+    /**
+     * Decorated rates (see MethodDecorator for the shape).
+     * @var array<int, array<string, mixed>>
+     */
+    public array $methods = [];
 
     protected $listeners = [
-        'addressSaved'       => 'onAddressSaved',
-        'stepEditRequested'  => 'onEditRequested',
+        'addressSaved'      => 'onAddressSaved',
+        'stepEditRequested' => 'onEditRequested',
     ];
 
     public function __construct(
         private readonly CheckoutSession $checkoutSession,
         private readonly QuoteService $quoteService,
+        private readonly MethodDecorator $methodDecorator,
+        private readonly LoggerInterface $logger,
     ) {}
 
     public function boot(): void
     {
+        $this->errorMessage = '';
+
         $quote    = $this->checkoutSession->getQuote();
         $shipping = $quote->getShippingAddress();
 
+        // Pre-fill selection from an existing quote (e.g. after page refresh).
         if ($shipping->getShippingMethod()) {
-            [$carrier, $method] = explode('_', $shipping->getShippingMethod(), 2) + ['', ''];
+            [$carrier, $method] = explode('_', (string) $shipping->getShippingMethod(), 2) + ['', ''];
             $this->selectedCarrier = $carrier;
             $this->selectedMethod  = $method;
-            $this->complete        = true;
+            $this->complete        = $carrier !== '' && $method !== '';
+        }
+
+        // Load rates if the address step is already done (prevents an empty
+        // list on refresh). Address component writes a firstname on save.
+        if ($shipping->getFirstname()) {
+            $this->methods = $this->fetchDecoratedRates();
         }
     }
 
     public function onAddressSaved(): void
     {
-        $this->loading = true;
-        $this->rates   = $this->fetchRates();
-        $this->loading = false;
+        $this->errorMessage = '';
+        $this->methods      = $this->fetchDecoratedRates();
+
+        // If a previously selected method vanished (address change invalidated
+        // the carrier) clear the selection so the UI forces a re-pick.
+        if ($this->selectedCarrier !== '' && !$this->isSelectionAvailable()) {
+            $this->selectedCarrier = '';
+            $this->selectedMethod  = '';
+            $this->complete        = false;
+        }
     }
 
     public function selectMethod(string $carrierCode, string $methodCode): void
     {
-        $quote = $this->checkoutSession->getQuote();
-        $this->quoteService->setShippingMethod($quote, $carrierCode, $methodCode);
-        $this->quoteService->collectAndSave($quote);
+        if ($carrierCode === '' || $methodCode === '') {
+            return;
+        }
+
+        try {
+            $quote = $this->checkoutSession->getQuote();
+            $this->quoteService->setShippingMethod($quote, $carrierCode, $methodCode);
+            $this->quoteService->collectAndSave($quote);
+        } catch (\Throwable $e) {
+            $this->logger->error('Shipping method save failed', ['exception' => $e]);
+            $this->errorMessage = (string) __('We could not save your shipping choice. Please try again.');
+            return;
+        }
 
         $this->selectedCarrier = $carrierCode;
         $this->selectedMethod  = $methodCode;
         $this->complete        = true;
 
         $this->emit('shippingMethodSelected', $carrierCode, $methodCode);
-    }
-
-    public function editShipping(): void
-    {
-        $this->complete = false;
-        $this->emit('stepEditRequested', 'shipping');
+        $this->dispatchBrowserEvent('shipping-method-selected', [
+            'carrier' => $carrierCode,
+            'method'  => $methodCode,
+        ]);
     }
 
     public function isComplete(): bool
@@ -83,23 +127,57 @@ class Shipping extends Component
         $this->complete = false;
     }
 
-    /** @return array<int, array> */
-    private function fetchRates(): array
+    public function getSelectedSummary(): ?array
     {
-        $quote = $this->checkoutSession->getQuote();
-        $rawRates = $this->quoteService->getShippingRates($quote);
-        $result = [];
-
-        foreach ($rawRates as $rate) {
-            $result[] = [
-                'carrier'       => $rate->getCarrierCode(),
-                'method'        => $rate->getMethodCode(),
-                'carrier_title' => $rate->getCarrierTitle(),
-                'method_title'  => $rate->getMethodTitle(),
-                'price'         => (float) $rate->getPrice(),
-            ];
+        if (!$this->complete || $this->selectedCarrier === '' || $this->selectedMethod === '') {
+            return null;
         }
 
-        return $result;
+        foreach ($this->methods as $method) {
+            if ($method['carrier'] === $this->selectedCarrier
+                && $method['method'] === $this->selectedMethod
+            ) {
+                return $method;
+            }
+        }
+
+        // Methods array may be empty during a partial request — fall back to
+        // a fresh decorate pass so the summary still renders on refresh.
+        $quote = $this->checkoutSession->getQuote();
+        $rates = $this->quoteService->getShippingRates($quote);
+        return $this->methodDecorator->findDecoratedByCode(
+            $rates,
+            $this->selectedCarrier,
+            $this->selectedMethod
+        );
+    }
+
+    /**
+     * @return array<int, array<string, mixed>>
+     */
+    private function fetchDecoratedRates(): array
+    {
+        try {
+            $quote = $this->checkoutSession->getQuote();
+            $rates = $this->quoteService->getShippingRates($quote);
+            return $this->methodDecorator->decorate($rates);
+        } catch (\Throwable $e) {
+            $this->logger->error('Shipping rate collection failed', ['exception' => $e]);
+            $this->errorMessage = (string) __('We could not load shipping options. Please verify your address.');
+            return [];
+        }
+    }
+
+    private function isSelectionAvailable(): bool
+    {
+        foreach ($this->methods as $method) {
+            if ($method['carrier'] === $this->selectedCarrier
+                && $method['method'] === $this->selectedMethod
+                && !($method['error'] ?? null)
+            ) {
+                return true;
+            }
+        }
+        return false;
     }
 }

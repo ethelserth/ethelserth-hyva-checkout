@@ -1,0 +1,85 @@
+<?php
+/**
+ * Single shipping method row.
+ *
+ * Expects $method (single decorated entry), $selectedCarrier, $selectedMethod.
+ * The `:class` binding is driven off $wire properties so Alpine re-paints
+ * the selection ring the moment the Magewire round-trip completes.
+ *
+ * @var \Magento\Framework\View\Element\Template $block
+ * @var \Magento\Framework\Escaper $escaper
+ * @var array<string, mixed> $method
+ * @var string $selectedCarrier
+ * @var string $selectedMethod
+ */
+declare(strict_types=1);
+
+$carrier      = (string) $method['carrier'];
+$methodCode   = (string) $method['method'];
+$code         = (string) $method['code'];
+$carrierTitle = (string) $method['carrier_title'];
+$methodTitle  = (string) $method['method_title'];
+$priceLabel   = (string) $method['price_formatted'];
+$logoUrl      = $method['logo_url'] ?? null;
+$badge        = $method['badge'] ?? null;
+$badgeLabel   = $method['badge_label'] ?? null;
+$error        = $method['error'] ?? null;
+$isSelected   = $carrier === $selectedCarrier && $methodCode === $selectedMethod;
+$isDisabled   = $error !== null;
+?>
+
+<label class="checkout-option<?= $isDisabled ? ' is-disabled' : '' ?>"
+       :class="$wire.selectedCarrier === '<?= $escaper->escapeJs($carrier) ?>'
+            && $wire.selectedMethod === '<?= $escaper->escapeJs($methodCode) ?>'
+            ? 'is-selected' : ''"
+       <?= $isDisabled ? 'aria-disabled="true"' : '' ?>>
+
+    <input type="radio"
+           name="shipping_method"
+           value="<?= $escaper->escapeHtmlAttr($code) ?>"
+           <?= $isSelected ? 'checked' : '' ?>
+           <?= $isDisabled ? 'disabled' : '' ?>
+           <?php if (!$isDisabled): ?>
+           wire:click="selectMethod('<?= $escaper->escapeJs($carrier) ?>', '<?= $escaper->escapeJs($methodCode) ?>')"
+           <?php endif ?>
+           class="w-4 h-4 flex-shrink-0 accent-current"
+           aria-label="<?= $escaper->escapeHtmlAttr(trim($carrierTitle . ' ' . $methodTitle)) ?>"/>
+
+    <?php if ($logoUrl): ?>
+    <img src="<?= $escaper->escapeUrl($logoUrl) ?>"
+         alt="<?= $escaper->escapeHtmlAttr($carrierTitle) ?>"
+         class="checkout-carrier-logo"
+         width="36" height="24"
+         loading="lazy"/>
+    <?php else: ?>
+    <span class="checkout-carrier-logo checkout-carrier-logo--fallback" aria-hidden="true">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M3 7h11v10H3zM14 10h4l3 3v4h-7z"/>
+            <circle cx="7" cy="18" r="1.5"/>
+            <circle cx="17" cy="18" r="1.5"/>
+        </svg>
+    </span>
+    <?php endif ?>
+
+    <div class="flex-1 min-w-0">
+        <p class="checkout-choice-title">
+            <?= $escaper->escapeHtml($methodTitle) ?>
+            <?php if ($badge): ?>
+            <span class="checkout-badge checkout-badge--<?= $escaper->escapeHtmlAttr($badge) ?>">
+                <?= $escaper->escapeHtml($badgeLabel) ?>
+            </span>
+            <?php endif ?>
+        </p>
+        <p class="checkout-choice-sub">
+            <?php if ($error): ?>
+                <?= $escaper->escapeHtml($error) ?>
+            <?php else: ?>
+                <?= $escaper->escapeHtml($carrierTitle) ?>
+            <?php endif ?>
+        </p>
+    </div>
+
+    <span class="checkout-option-price flex-shrink-0">
+        <?= $escaper->escapeHtml($priceLabel) ?>
+    </span>
+</label>

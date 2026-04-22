@@ -195,12 +195,14 @@ class Address extends Component
 
         $this->complete = true;
         $this->emit('addressSaved');
+        $this->dispatchBrowserEvent('address-saved');
     }
 
     public function editAddress(): void
     {
         $this->complete = false;
         $this->emit('stepEditRequested', 'address');
+        $this->dispatchBrowserEvent('step-edit-requested', 'address');
     }
 
     /**
@@ -247,6 +249,90 @@ class Address extends Component
     public function isComplete(): bool
     {
         return $this->complete;
+    }
+
+    /**
+     * Compact summary for the collapsed "done" view of the step.
+     * Returns null until the address has been saved.
+     *
+     * @return array{
+     *     name: string,
+     *     email: string,
+     *     company: string,
+     *     street: string[],
+     *     city_line: string,
+     *     country: string,
+     *     telephone: string,
+     *     vat_id: string,
+     *     billing_differs: bool,
+     *     billing_lines: string[]
+     * }|null
+     */
+    public function getAddressSummary(): ?array
+    {
+        if (!$this->complete || $this->firstname === '') {
+            return null;
+        }
+
+        $name = trim(implode(' ', array_filter([
+            $this->prefix, $this->firstname, $this->middlename, $this->lastname, $this->suffix,
+        ])));
+
+        $street = array_values(array_filter(
+            [$this->street1, $this->street2, $this->street3, $this->street4],
+            static fn(string $line): bool => $line !== '',
+        ));
+
+        $cityLine = implode(', ', array_filter([
+            $this->city,
+            $this->region,
+            $this->postcode,
+        ]));
+
+        $billingLines = [];
+        if (!$this->billingSameAsShipping) {
+            $billingName = trim(implode(' ', array_filter([
+                $this->billingPrefix, $this->billingFirstname, $this->billingLastname,
+            ])));
+            $billingStreet = array_filter([$this->billingStreet1, $this->billingStreet2]);
+            $billingCity = implode(', ', array_filter([
+                $this->billingCity, $this->billingRegion, $this->billingPostcode,
+            ]));
+            $billingLines = array_values(array_filter([
+                $billingName,
+                $this->billingCompany,
+                ...$billingStreet,
+                $billingCity,
+                $this->getCountryName($this->billingCountryId),
+                $this->billingTelephone,
+            ]));
+        }
+
+        return [
+            'name'            => $name,
+            'email'           => $this->email,
+            'company'         => $this->company,
+            'street'          => $street,
+            'city_line'       => $cityLine,
+            'country'         => $this->getCountryName($this->countryId),
+            'telephone'       => $this->telephone,
+            'vat_id'          => $this->vatId,
+            'billing_differs' => !$this->billingSameAsShipping,
+            'billing_lines'   => $billingLines,
+        ];
+    }
+
+    public function getCountryName(string $countryId): string
+    {
+        if ($countryId === '') {
+            return '';
+        }
+        foreach ($this->getCountryOptions() as $option) {
+            if ((string) ($option['value'] ?? '') === $countryId) {
+                return (string) ($option['label'] ?? $countryId);
+            }
+        }
+        return $countryId;
     }
 
     public function onEditRequested(string $step): void

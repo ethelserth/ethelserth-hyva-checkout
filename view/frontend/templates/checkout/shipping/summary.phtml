@@ -1,0 +1,38 @@
+<?php
+/**
+ * Collapsed summary — shown in the root checkout.phtml done-summary slot.
+ *
+ * This is a second Magewire mount of the Shipping component, so it MUST
+ * emit exactly one root element even when nothing is selected yet
+ * (Magewire throws "Missing root tag" otherwise). We keep the root
+ * wrapper permanent and render the row only when a summary exists.
+ *
+ * @var \Magento\Framework\View\Element\Template $block
+ * @var \Magento\Framework\Escaper $escaper
+ * @var \Ethelserth\Checkout\Magewire\Step\Shipping $magewire
+ */
+declare(strict_types=1);
+
+$summary = $magewire->getSelectedSummary();
+$logoUrl = $summary['logo_url'] ?? null;
+?>
+
+<div class="checkout-done-summary">
+    <?php if ($summary): ?>
+        <?php if ($logoUrl): ?>
+        <img src="<?= $escaper->escapeUrl($logoUrl) ?>"
+             alt="<?= $escaper->escapeHtmlAttr($summary['carrier_title']) ?>"
+             class="checkout-carrier-logo"
+             width="36" height="24"/>
+        <?php endif ?>
+
+        <div class="flex-1 min-w-0">
+            <p class="checkout-choice-title"><?= $escaper->escapeHtml($summary['method_title']) ?></p>
+            <p class="checkout-choice-sub"><?= $escaper->escapeHtml($summary['carrier_title']) ?></p>
+        </div>
+
+        <span class="checkout-option-price flex-shrink-0">
+            <?= $escaper->escapeHtml($summary['price_formatted']) ?>
+        </span>
+    <?php endif ?>
+</div>

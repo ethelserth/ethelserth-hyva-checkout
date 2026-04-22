@@ -1,0 +1,26 @@
+<?php
+/**
+ * Shipping method list.
+ *
+ * Expects $methods (decorated, see MethodDecorator), $selectedCarrier,
+ * $selectedMethod to be defined in the parent scope.
+ *
+ * @var \Magento\Framework\View\Element\Template $block
+ * @var \Magento\Framework\Escaper $escaper
+ * @var array<int, array<string, mixed>> $methods
+ * @var string $selectedCarrier
+ * @var string $selectedMethod
+ */
+declare(strict_types=1);
+?>
+
+<div class="space-y-2" role="radiogroup" aria-label="<?= $escaper->escapeHtmlAttr(__('Shipping method')) ?>">
+
+    <?php foreach ($methods as $method): ?>
+    <?php
+    $methodItemTemplate = $block->getTemplateFile('Ethelserth_Checkout::checkout/shipping/method-item.phtml');
+    if ($methodItemTemplate) include $methodItemTemplate;
+    ?>
+    <?php endforeach ?>
+
+</div>

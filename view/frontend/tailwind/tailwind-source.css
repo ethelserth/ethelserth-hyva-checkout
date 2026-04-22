@@ -339,10 +339,79 @@
         background-color: color-mix(in srgb, var(--color-primary) 5%, transparent);
     }
 
+    .checkout-option.is-disabled {
+        opacity: 0.55;
+        cursor: not-allowed;
+        background-color: var(--color-gray-50);
+    }
+
+    .checkout-option.is-disabled:hover {
+        border-color: var(--color-gray-200);
+    }
+
     .checkout-option-price {
         font-size: 0.9375rem;
         font-weight: 600;
         color: var(--color-fg);
+    }
+
+    /* ──────────────────────────────────────────────────────────────
+       Carrier logo — consistent box for heterogeneous artwork.
+       Falls back to a neutral truck glyph for unknown carriers.
+       ────────────────────────────────────────────────────────────── */
+    .checkout-carrier-logo {
+        flex-shrink: 0;
+        width: 2.25rem;
+        height: 1.5rem;
+        object-fit: contain;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        border-radius: 0.25rem;
+        background-color: var(--color-surface);
+    }
+
+    .checkout-carrier-logo--fallback {
+        color: var(--color-fg-secondary);
+        background-color: var(--color-gray-100);
+    }
+
+    /* ──────────────────────────────────────────────────────────────
+       Method badge — "Cheapest" pill. Additional variants can be
+       added by extending MethodDecorator; the CSS class pattern is
+       .checkout-badge--<variant>.
+       ────────────────────────────────────────────────────────────── */
+    .checkout-badge {
+        display: inline-block;
+        margin-left: 0.5rem;
+        padding: 0.0625rem 0.4375rem;
+        font-size: 0.6875rem;
+        font-weight: 600;
+        line-height: 1.1;
+        border-radius: 9999px;
+        vertical-align: middle;
+        text-transform: uppercase;
+        letter-spacing: 0.03em;
+    }
+
+    .checkout-badge--cheapest {
+        background-color: color-mix(in srgb, var(--color-primary) 12%, transparent);
+        color: var(--color-primary);
+    }
+
+    /* ──────────────────────────────────────────────────────────────
+       Collapsed step summary (rendered in root template slot)
+       ────────────────────────────────────────────────────────────── */
+    .checkout-section-summary {
+        padding: 0.875rem 1.25rem;
+        border-bottom: 1px solid var(--color-gray-100);
+        background-color: var(--color-gray-50);
+    }
+
+    .checkout-done-summary {
+        display: flex;
+        align-items: center;
+        gap: 0.75rem;
     }
 
     /* ──────────────────────────────────────────────────────────────
