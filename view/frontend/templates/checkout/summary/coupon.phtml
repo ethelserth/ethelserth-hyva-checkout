@@ -1,0 +1,68 @@
+<?php
+/**
+ * Summary — discount code.
+ *
+ * One root tag (Magewire requirement). Two visible states inside:
+ *   - input + apply button (no code applied)
+ *   - applied pill + remove button (code applied)
+ *
+ * @var \Magento\Framework\View\Element\Template $block
+ * @var \Magento\Framework\Escaper $escaper
+ * @var \Ethelserth\Checkout\Magewire\Summary\Coupon $magewire
+ */
+declare(strict_types=1);
+
+$applied        = $magewire->appliedCode;
+$errorMessage   = $magewire->errorMessage;
+$successMessage = $magewire->successMessage;
+?>
+
+<div class="checkout-coupon">
+
+    <?php if ($applied !== ''): ?>
+
+    <div class="checkout-coupon-applied">
+        <span class="checkout-coupon-applied-label">
+            <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
+                <path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd"/>
+            </svg>
+            <span><?= $escaper->escapeHtml($applied) ?></span>
+        </span>
+        <button type="button"
+                wire:click="removeCoupon"
+                wire:loading.attr="disabled"
+                class="checkout-coupon-remove">
+            <?= $escaper->escapeHtml(__('Remove')) ?>
+        </button>
+    </div>
+
+    <?php else: ?>
+
+    <div class="checkout-coupon-input-row">
+        <input type="text"
+               class="checkout-input checkout-coupon-input"
+               wire:model.defer="code"
+               wire:keydown.enter="applyCoupon"
+               placeholder="<?= $escaper->escapeHtmlAttr(__('Discount code')) ?>"
+               autocomplete="off"
+               spellcheck="false"
+               aria-label="<?= $escaper->escapeHtmlAttr(__('Discount code')) ?>"/>
+        <button type="button"
+                wire:click="applyCoupon"
+                wire:loading.attr="disabled"
+                class="checkout-btn checkout-btn-secondary checkout-coupon-apply">
+            <?= $escaper->escapeHtml(__('Apply')) ?>
+        </button>
+    </div>
+
+    <?php endif ?>
+
+    <?php if ($errorMessage !== ''): ?>
+    <p class="checkout-field-error" role="alert"><?= $escaper->escapeHtml($errorMessage) ?></p>
+    <?php endif ?>
+
+    <?php if ($successMessage !== '' && $applied !== ''): ?>
+    <p class="checkout-coupon-success"><?= $escaper->escapeHtml($successMessage) ?></p>
+    <?php endif ?>
+
+</div>

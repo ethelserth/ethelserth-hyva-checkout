@@ -43,6 +43,39 @@
                     </arguments>
                 </block>
 
+                <!-- Order summary: items + coupon + totals.
+                     Each child is its own Magewire mount so it can re-render
+                     on its own event channel without dragging the others. -->
+                <block class="Magento\Framework\View\Element\Template"
+                       name="checkout.summary"
+                       template="Ethelserth_Checkout::checkout/summary/root.phtml">
+
+                    <block class="Magento\Framework\View\Element\Template"
+                           name="checkout.summary.items"
+                           template="Ethelserth_Checkout::checkout/summary/items.phtml">
+                        <arguments>
+                            <argument name="magewire" xsi:type="object">Ethelserth\Checkout\Magewire\Summary\Items</argument>
+                        </arguments>
+                    </block>
+
+                    <block class="Magento\Framework\View\Element\Template"
+                           name="checkout.summary.coupon"
+                           template="Ethelserth_Checkout::checkout/summary/coupon.phtml">
+                        <arguments>
+                            <argument name="magewire" xsi:type="object">Ethelserth\Checkout\Magewire\Summary\Coupon</argument>
+                        </arguments>
+                    </block>
+
+                    <block class="Magento\Framework\View\Element\Template"
+                           name="checkout.summary.totals"
+                           template="Ethelserth_Checkout::checkout/summary/totals.phtml">
+                        <arguments>
+                            <argument name="magewire" xsi:type="object">Ethelserth\Checkout\Magewire\Summary\Totals</argument>
+                        </arguments>
+                    </block>
+
+                </block>
+
             </block>
         </referenceContainer>
     </body>

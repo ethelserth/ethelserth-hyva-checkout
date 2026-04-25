@@ -1,0 +1,43 @@
+<?php
+/**
+ * Summary — totals rows.
+ *
+ * Listens for addressSaved / shippingMethodSelected / couponApplied /
+ * couponRemoved (registered in Totals::$listeners) — the row set is
+ * recomputed against the live quote on every re-render. The grand total
+ * is also tagged with `data-summary-grand` so the (non-Magewire) mobile
+ * collapsed bar can mirror it via the `summary-totals-updated` browser
+ * event the component dispatches after each render.
+ *
+ * @var \Magento\Framework\View\Element\Template $block
+ * @var \Magento\Framework\Escaper $escaper
+ * @var \Ethelserth\Checkout\Magewire\Summary\Totals $magewire
+ */
+declare(strict_types=1);
+
+$rows               = $magewire->getRows();
+$grandTotal         = $magewire->getGrandTotalFormatted();
+$hasShippingMethod  = $magewire->hasShippingMethod();
+?>
+
+<div class="checkout-totals" wire:loading.class="is-loading">
+
+    <?php foreach ($rows as $row): ?>
+    <div class="checkout-totals-row<?= $row['free'] ? ' checkout-totals-row--free' : '' ?>">
+        <span><?= $escaper->escapeHtml($row['label']) ?></span>
+        <span><?= $escaper->escapeHtml($row['value_formatted']) ?></span>
+    </div>
+    <?php endforeach ?>
+
+    <?php if (!$hasShippingMethod && empty($rows)): ?>
+    <p class="checkout-hint">
+        <?= $escaper->escapeHtml(__('Totals will update once your delivery details are entered.')) ?>
+    </p>
+    <?php endif ?>
+
+    <div class="checkout-totals-row checkout-totals-row--grand">
+        <span><?= $escaper->escapeHtml(__('Total')) ?></span>
+        <span data-summary-grand><?= $escaper->escapeHtml($grandTotal) ?></span>
+    </div>
+
+</div>

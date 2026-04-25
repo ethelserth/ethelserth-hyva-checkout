@@ -1,0 +1,54 @@
+<?php
+/**
+ * Summary — items list.
+ *
+ * Read-only render of quote items. Configurable/bundle option labels are
+ * surfaced inline; image falls back to a neutral tile if the product
+ * has no image asset.
+ *
+ * @var \Magento\Framework\View\Element\Template $block
+ * @var \Magento\Framework\Escaper $escaper
+ * @var \Ethelserth\Checkout\Magewire\Summary\Items $magewire
+ */
+declare(strict_types=1);
+
+$items = $magewire->getItems();
+?>
+
+<div class="checkout-summary-items">
+    <?php if (empty($items)): ?>
+    <p class="checkout-hint"><?= $escaper->escapeHtml(__('Your cart is empty.')) ?></p>
+    <?php else: ?>
+    <?php foreach ($items as $item): ?>
+    <div class="checkout-summary-item">
+        <div class="checkout-summary-item-thumb">
+            <?php if ($item['image_url']): ?>
+            <img src="<?= $escaper->escapeUrl($item['image_url']) ?>"
+                 alt="<?= $escaper->escapeHtmlAttr($item['name']) ?>"
+                 width="56" height="56" loading="lazy"/>
+            <?php endif ?>
+            <?php if ($item['qty'] > 0): ?>
+            <span class="checkout-summary-item-qty" aria-label="<?= $escaper->escapeHtmlAttr(__('Quantity %1', $item['qty'])) ?>">
+                <?= (int) $item['qty'] ?>
+            </span>
+            <?php endif ?>
+        </div>
+
+        <div class="checkout-summary-item-info">
+            <p class="checkout-summary-item-name"><?= $escaper->escapeHtml($item['name']) ?></p>
+            <?php if (!empty($item['options'])): ?>
+            <p class="checkout-summary-item-options">
+                <?php $parts = []; foreach ($item['options'] as $opt) {
+                    $parts[] = $escaper->escapeHtml(($opt['label'] ? $opt['label'] . ': ' : '') . $opt['value']);
+                } echo implode(' &middot; ', $parts); ?>
+            </p>
+            <?php endif ?>
+        </div>
+
+        <span class="checkout-summary-item-price">
+            <?= $escaper->escapeHtml($item['row_total_formatted']) ?>
+        </span>
+    </div>
+    <?php endforeach ?>
+    <?php endif ?>
+</div>

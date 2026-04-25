@@ -1,0 +1,85 @@
+<?php
+/**
+ * Summary root — wraps the three Magewire summary mounts (items, coupon,
+ * totals) into a single visual unit.
+ *
+ * Two presentations from one DOM tree, switched by media-query CSS:
+ *   - Desktop (lg:): white sticky card, body always visible.
+ *   - Mobile:        dark navy sticky bar, compact toggle visible always,
+ *                    body gated by Alpine state.
+ *
+ * The mobile compact toggle shows the live grand total. It's outside the
+ * Magewire mounts (re-rendering it from any one component would require
+ * bouncing into a 4th mount), so we mirror the figure via the
+ * `summary-totals-updated` browser event the Totals component dispatches.
+ *
+ * @var \Magento\Framework\View\Element\Template $block
+ * @var \Magento\Framework\Escaper $escaper
+ */
+declare(strict_types=1);
+
+/** @var \Ethelserth\Checkout\Magewire\Summary\Totals $totalsComponent */
+$totalsBlock     = $block->getLayout()->getBlock('checkout.summary.totals');
+$totalsComponent = $totalsBlock ? $totalsBlock->getData('magewire') : null;
+$initialGrand    = $totalsComponent instanceof \Ethelserth\Checkout\Magewire\Summary\Totals
+    ? $totalsComponent->getGrandTotalFormatted()
+    : '';
+
+/** @var \Ethelserth\Checkout\Magewire\Summary\Items $itemsComponent */
+$itemsBlock     = $block->getLayout()->getBlock('checkout.summary.items');
+$itemsComponent = $itemsBlock ? $itemsBlock->getData('magewire') : null;
+$initialCount   = $itemsComponent instanceof \Ethelserth\Checkout\Magewire\Summary\Items
+    ? $itemsComponent->getItemCount()
+    : 0;
+?>
+
+<aside class="checkout-summary"
+       x-data="{
+            open: false,
+            grandTotal: '<?= $escaper->escapeJs($initialGrand) ?>',
+            itemCount: <?= (int) $initialCount ?>
+       }"
+       @summary-totals-updated.window="grandTotal = $event.detail.grand_total_formatted ?? grandTotal">
+
+    <!-- Compact toggle bar — mobile only. -->
+    <button type="button"
+            class="checkout-summary-bar lg:hidden"
+            @click="open = !open"
+            :aria-expanded="open ? 'true' : 'false'"
+            aria-controls="checkout-summary-body">
+        <span class="checkout-summary-bar-label">
+            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" aria-hidden="true">
+                <path stroke-linecap="round" stroke-linejoin="round" d="M3 3h2l.4 2M7 13h10l4-8H5.4M7 13L5.4 5M7 13l-2.293 2.293c-.63.63-.184 1.707.707 1.707H17m0 0a2 2 0 100 4 2 2 0 000-4zm-8 2a2 2 0 11-4 0 2 2 0 014 0z"/>
+            </svg>
+            <span x-text="open ? '<?= $escaper->escapeJs((string) __('Hide order summary')) ?>' : '<?= $escaper->escapeJs((string) __('Show order summary')) ?>'">
+                <?= $escaper->escapeHtml(__('Show order summary')) ?>
+            </span>
+            <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"
+                 class="checkout-summary-bar-chevron"
+                 :class="{ 'is-open': open }"
+                 aria-hidden="true">
+                <path stroke-linecap="round" stroke-linejoin="round" d="M19 9l-7 7-7-7"/>
+            </svg>
+        </span>
+        <span class="checkout-summary-bar-total" x-text="grandTotal">
+            <?= $escaper->escapeHtml($initialGrand) ?>
+        </span>
+    </button>
+
+    <!-- Body — always visible on desktop, gated by `open` on mobile. -->
+    <div id="checkout-summary-body"
+         class="checkout-summary-body lg:block"
+         :class="{ 'hidden': !open }"
+         x-cloak>
+
+        <h2 class="checkout-summary-title hidden lg:block">
+            <?= $escaper->escapeHtml(__('Order summary')) ?>
+        </h2>
+
+        <?= $block->getChildHtml('checkout.summary.items') ?>
+        <?= $block->getChildHtml('checkout.summary.coupon') ?>
+        <?= $block->getChildHtml('checkout.summary.totals') ?>
+
+    </div>
+
+</aside>
