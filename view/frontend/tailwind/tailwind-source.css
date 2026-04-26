@@ -809,4 +809,279 @@
         margin-top: 0.25rem;
         border-top: 1px solid var(--color-gray-200);
     }
+
+    /* ──────────────────────────────────────────────────────────────
+       Payment method radio cards (mockup §STEP 3).
+       Selected card gets a 2px primary border + faint primary tint;
+       inactive cards have a hover-only background.
+       ────────────────────────────────────────────────────────────── */
+    .checkout-payment-list {
+        display: flex;
+        flex-direction: column;
+        gap: 0.5rem;
+    }
+
+    .checkout-payment-method {
+        position: relative;
+        border: 1px solid var(--color-gray-200);
+        border-radius: var(--radius-lg);
+        overflow: hidden;
+        cursor: pointer;
+        transition: border-color 200ms ease, background-color 200ms ease;
+    }
+
+    .checkout-payment-method:hover {
+        border-color: color-mix(in srgb, var(--color-primary) 30%, transparent);
+    }
+
+    .checkout-payment-method.is-selected {
+        border: 2px solid var(--color-primary);
+        background-color: color-mix(in srgb, var(--color-primary) 4%, transparent);
+    }
+
+    .checkout-payment-method-head {
+        width: 100%;
+        display: flex;
+        align-items: center;
+        gap: 0.75rem;
+        padding: 1rem;
+        background: transparent;
+        border: 0;
+        text-align: left;
+        font: inherit;
+        color: inherit;
+        cursor: pointer;
+    }
+
+    .checkout-payment-method:not(.is-selected) .checkout-payment-method-head:hover {
+        background-color: var(--color-gray-50);
+    }
+
+    .checkout-payment-radio {
+        flex-shrink: 0;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        width: 1.25rem;
+        height: 1.25rem;
+        border: 2px solid var(--color-gray-300);
+        border-radius: 9999px;
+        transition: border-color 150ms ease;
+    }
+
+    .checkout-payment-method.is-selected .checkout-payment-radio {
+        border-color: var(--color-primary);
+    }
+
+    .checkout-payment-radio-dot {
+        width: 0.625rem;
+        height: 0.625rem;
+        border-radius: 9999px;
+        background-color: var(--color-primary);
+        opacity: 0;
+        transition: opacity 150ms ease;
+    }
+
+    .checkout-payment-method.is-selected .checkout-payment-radio-dot {
+        opacity: 1;
+    }
+
+    .checkout-payment-logo {
+        flex-shrink: 0;
+        width: 2.5rem;
+        height: 1.5rem;
+        object-fit: contain;
+        border: 1px solid var(--color-gray-200);
+        border-radius: 0.25rem;
+        background-color: var(--color-surface);
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+    }
+
+    .checkout-payment-logo--fallback {
+        background-color: var(--color-gray-100);
+        color: var(--color-fg-secondary);
+        font-size: 0.625rem;
+        font-weight: 700;
+        letter-spacing: 0.025em;
+    }
+
+    .checkout-payment-title {
+        flex: 1 1 auto;
+        font-size: 0.875rem;
+        font-weight: 500;
+        color: var(--color-fg);
+    }
+
+    .checkout-payment-surcharge {
+        flex-shrink: 0;
+        font-size: 0.75rem;
+        color: var(--color-fg-secondary);
+    }
+
+    .checkout-payment-method-body {
+        padding: 0 1rem 1rem;
+        border-top: 1px solid var(--color-gray-100);
+        background-color: var(--color-gray-50);
+    }
+
+    .checkout-payment-method.is-selected .checkout-payment-method-body {
+        background-color: color-mix(in srgb, var(--color-primary) 3%, transparent);
+    }
+
+    /* ──────────────────────────────────────────────────────────────
+       Place order CTA — full-width primary button with an inline
+       divider + total ("Place order · €118.45").
+       ────────────────────────────────────────────────────────────── */
+    .checkout-payment-cta {
+        margin-top: 1rem;
+        padding-top: 1rem;
+        border-top: 1px solid var(--color-gray-100);
+    }
+
+    .checkout-place-order {
+        width: 100%;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        gap: 0.75rem;
+        padding: 0.875rem 1.25rem;
+        background-color: var(--color-primary);
+        color: var(--color-on-primary);
+        font-size: 0.9375rem;
+        font-weight: 600;
+        border: 1px solid transparent;
+        border-radius: var(--radius-md);
+        cursor: pointer;
+        transition: background-color 200ms ease, opacity 200ms ease;
+    }
+
+    .checkout-place-order:hover:not(:disabled) {
+        background-color: color-mix(in srgb, var(--color-primary) 88%, #000);
+    }
+
+    .checkout-place-order:disabled {
+        opacity: 0.55;
+        cursor: not-allowed;
+    }
+
+    .checkout-place-order-label {
+        display: inline-flex;
+        align-items: center;
+        gap: 0.5rem;
+    }
+
+    .checkout-place-order-divider {
+        width: 1px;
+        height: 1rem;
+        background-color: rgba(255, 255, 255, 0.3);
+    }
+
+    .checkout-place-order-total {
+        font-weight: 700;
+    }
+
+    .checkout-place-order-hint {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        gap: 0.375rem;
+        width: 100%;
+        margin-top: 0.625rem;
+        font-size: 0.75rem;
+        color: var(--color-gray-400);
+        text-align: center;
+    }
+
+    .checkout-place-order-hint a {
+        color: inherit;
+    }
+
+    /* ──────────────────────────────────────────────────────────────
+       Confirmation page (after successful place-order).
+       ────────────────────────────────────────────────────────────── */
+    .checkout-confirmation {
+        max-width: 32rem;
+        margin: 0 auto;
+        padding: 4rem 1rem;
+        text-align: center;
+    }
+
+    .checkout-confirmation-icon {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        width: 5rem;
+        height: 5rem;
+        margin-bottom: 1.5rem;
+        border-radius: 9999px;
+        background-color: #d1fae5;
+        color: #059669;
+    }
+
+    .checkout-confirmation-title {
+        font-size: 1.875rem;
+        font-weight: 700;
+        color: var(--color-fg);
+        margin-bottom: 0.75rem;
+    }
+
+    .checkout-confirmation-lead {
+        font-size: 1.0625rem;
+        color: var(--color-fg-secondary);
+        margin-bottom: 1.5rem;
+    }
+
+    .checkout-confirmation-lead strong {
+        color: var(--color-fg);
+    }
+
+    .checkout-confirmation-meta {
+        display: grid;
+        grid-template-columns: 1fr;
+        gap: 0.75rem;
+        max-width: 22rem;
+        margin: 0 auto 1.5rem;
+        padding: 1rem 1.25rem;
+        background-color: var(--color-gray-50);
+        border: 1px solid var(--color-gray-100);
+        border-radius: var(--radius-md);
+        font-size: 0.875rem;
+        text-align: left;
+    }
+
+    .checkout-confirmation-meta > div {
+        display: flex;
+        justify-content: space-between;
+        gap: 1rem;
+    }
+
+    .checkout-confirmation-meta dt {
+        color: var(--color-fg-secondary);
+    }
+
+    .checkout-confirmation-meta dd {
+        margin: 0;
+        color: var(--color-fg);
+        font-weight: 600;
+    }
+
+    .checkout-confirmation-note {
+        color: var(--color-fg-secondary);
+        margin-bottom: 2rem;
+    }
+
+    .checkout-confirmation-actions {
+        display: flex;
+        flex-direction: column;
+        gap: 0.75rem;
+        justify-content: center;
+    }
+
+    @media (min-width: 640px) {
+        .checkout-confirmation-actions {
+            flex-direction: row;
+        }
+    }
 }

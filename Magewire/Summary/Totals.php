@@ -25,6 +25,7 @@ class Totals extends Component
     protected $listeners = [
         'addressSaved'           => 'refresh',
         'shippingMethodSelected' => 'refresh',
+        'paymentMethodSelected'  => 'refresh',
         'couponApplied'          => 'refresh',
         'couponRemoved'          => 'refresh',
     ];

@@ -8,49 +8,29 @@ use Magento\Framework\View\Asset\Repository as AssetRepository;
 /**
  * Resolves a carrier logo URL by carrier code.
  *
- * Logos are expected at:
- *   app/code/Ethelserth/Checkout/view/frontend/web/images/shipping/<carrierCode>.svg
+ * The module ships NO carrier artwork by default — every carrier resolves
+ * to null and the template falls back to the neutral truck glyph. Stores
+ * (or PSP modules) that want branded logos override this resolver via DI
+ * and ship their own SVG assets.
  *
- * Custom carriers that have no asset fall back to null — the template then
- * renders a neutral generic icon. The resolver is intentionally indulgent:
- * any admin-configured carrier works, even if the module ships no artwork.
+ * The earlier version of this class kept a static map of "known carriers"
+ * (flatrate, freeshipping, tablerate, ups, …) but the assets were never
+ * shipped — the `<img>` 404'd and browsers fell back to rendering the
+ * `alt` text wrapped inside a 36×24 box, which looked like garbled noise.
  */
 class Resolver
 {
-    /**
-     * Carriers we ship artwork for out of the box. Adding a new key + asset
-     * is enough to light up a logo. Unknown carriers resolve to null.
-     *
-     * @var array<string, string>
-     */
-    private const KNOWN_CARRIERS = [
-        'flatrate'     => 'flatrate.svg',
-        'freeshipping' => 'freeshipping.svg',
-        'tablerate'    => 'tablerate.svg',
-        'ups'          => 'ups.svg',
-        'usps'         => 'usps.svg',
-        'fedex'        => 'fedex.svg',
-        'dhl'          => 'dhl.svg',
-        'dhlexpress'   => 'dhl.svg',
-        'postnl'       => 'postnl.svg',
-        'dpd'          => 'dpd.svg',
-        'gls'          => 'gls.svg',
-        'bpost'        => 'bpost.svg',
-    ];
-
     public function __construct(
         private readonly AssetRepository $assetRepository,
     ) {}
 
+    /**
+     * @SuppressWarnings(PHPMD.UnusedFormalParameter) — the carrier code is
+     * the contract; subclasses use it. Kept here so DI overrides slot in
+     * without changing the call site.
+     */
     public function getLogoUrl(string $carrierCode): ?string
     {
-        $key = strtolower($carrierCode);
-        if (!isset(self::KNOWN_CARRIERS[$key])) {
-            return null;
-        }
-
-        return $this->assetRepository->getUrl(
-            'Ethelserth_Checkout::images/shipping/' . self::KNOWN_CARRIERS[$key]
-        );
+        return null;
     }
 }

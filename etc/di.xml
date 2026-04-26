@@ -9,4 +9,21 @@
         </arguments>
     </type>
 
+    <!-- Payment adapter registry. PSP modules append to the `adapters` array
+         from their own etc/frontend/di.xml, e.g.:
+
+           <type name="Ethelserth\Checkout\Model\Payment\MethodPool">
+               <arguments>
+                   <argument name="adapters" xsi:type="array">
+                       <item name="viva_smart" xsi:type="object">Ethelserth\CheckoutViva\Adapter\SmartCheckout</item>
+                   </argument>
+               </arguments>
+           </type>
+    -->
+    <type name="Ethelserth\Checkout\Model\Payment\MethodPool">
+        <arguments>
+            <argument name="adapters" xsi:type="array"/>
+        </arguments>
+    </type>
+
 </config>

@@ -1,0 +1,28 @@
+<?php
+/**
+ * Payment method list — iterates the decorated methods dict from the
+ * Magewire Payment component and renders a row per method.
+ *
+ * Variables provided by step/payment.phtml include():
+ *   array  $methods
+ *   string $selectedMethod
+ *
+ * @var \Magento\Framework\View\Element\Template $block
+ * @var \Magento\Framework\Escaper $escaper
+ * @var array<int, array> $methods
+ * @var string $selectedMethod
+ */
+declare(strict_types=1);
+
+if (empty($methods)) {
+    echo '<p class="checkout-hint">' . $escaper->escapeHtml(__('No payment methods are available right now. Please contact us if this persists.')) . '</p>';
+    return;
+}
+?>
+
+<div class="checkout-payment-list" role="radiogroup">
+    <?php foreach ($methods as $method):
+        $isSelected = ($method['code'] === $selectedMethod);
+        include __DIR__ . '/method-item.phtml';
+    endforeach ?>
+</div>

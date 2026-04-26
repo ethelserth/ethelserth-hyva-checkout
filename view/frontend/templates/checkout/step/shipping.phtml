@@ -55,10 +55,15 @@ $summary         = $magewire->getSelectedSummary();
 
     </div>
 
-    <?php /* Done view — collapsed summary. */ ?>
+    <?php /* Done view — collapsed summary. Default-hidden via inline style
+            so a Magewire morph that swaps the node in BEFORE Alpine re-runs
+            x-show can never flash the summary into view alongside the active
+            method list (the bug we hit when boot() pre-fills `complete` from
+            an existing quote method on page refresh). */ ?>
     <?php if ($summary): ?>
     <div x-show="$store.checkout.isDone('shipping')"
          x-cloak
+         style="display: none"
          class="checkout-done-summary">
         <?php if ($summary['logo_url'] ?? null): ?>
         <img src="<?= $escaper->escapeUrl($summary['logo_url']) ?>"

@@ -1,0 +1,26 @@
+<?php
+/**
+ * Offline payment form fragment.
+ *
+ * Rendered inline inside the active method body. Pure presentation —
+ * displays the admin-configured `payment/<code>/instructions` text.
+ *
+ * The parent `method-item.phtml` instantiates this template via
+ * `createBlock(...)->setTemplate(...)->setData('instructions', $instructions)`.
+ * In Magento that puts the value on the block (read with `$block->getData()`)
+ * — it is NOT extracted as a local PHP variable in the template scope.
+ *
+ * @var \Magento\Framework\View\Element\Template $block
+ * @var \Magento\Framework\Escaper $escaper
+ */
+declare(strict_types=1);
+
+$instructions = (string) $block->getData('instructions');
+
+if (trim($instructions) === '') {
+    return;
+}
+?>
+<p class="text-xs text-gray-500 leading-relaxed pt-3">
+    <?= $escaper->escapeHtml(strip_tags($instructions, '<br><strong><em><a>')) ?>
+</p>

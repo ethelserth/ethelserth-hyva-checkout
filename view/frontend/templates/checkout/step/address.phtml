@@ -122,6 +122,7 @@ $summary = $magewire->getAddressSummary();
 <?php if ($summary): ?>
 <div x-show="$store.checkout.isDone('address')"
      x-cloak
+     style="display: none"
      class="checkout-done-summary checkout-address-summary">
     <div class="flex-1 min-w-0 space-y-0.5">
         <p class="checkout-choice-title"><?= $escaper->escapeHtml($summary['name']) ?></p>

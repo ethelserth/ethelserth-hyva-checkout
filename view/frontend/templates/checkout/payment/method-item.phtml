@@ -1,0 +1,75 @@
+<?php
+/**
+ * Single payment method row — radio + logo + title + optional surcharge,
+ * with a slide-down body that appears when the method is selected.
+ *
+ * Variables (set by method-list.phtml include):
+ *   array  $method        decorated method dict from MethodPool
+ *   bool   $isSelected
+ *   string $selectedMethod   currently selected code (for radio state)
+ *
+ * @var \Magento\Framework\Escaper $escaper
+ * @var array{code:string,title:string,icon:string,instructions:string,form_template:?string,surcharge:float,surcharge_formatted:string} $method
+ * @var bool $isSelected
+ */
+declare(strict_types=1);
+
+$code   = (string) $method['code'];
+$title  = (string) $method['title'];
+$icon   = (string) $method['icon'];
+$badge  = strtoupper(substr(preg_replace('/[^A-Z]/i', '', $code) ?: $code, 0, 4));
+$formTpl = $method['form_template'] ?? null;
+$instructions = (string) $method['instructions'];
+?>
+
+<div class="checkout-payment-method <?= $isSelected ? 'is-selected' : '' ?>"
+     role="radio"
+     aria-checked="<?= $isSelected ? 'true' : 'false' ?>">
+
+    <button type="button"
+            class="checkout-payment-method-head"
+            wire:click="selectMethod('<?= $escaper->escapeJs($code) ?>')"
+            wire:loading.attr="aria-busy"
+            wire:target="selectMethod">
+        <span class="checkout-payment-radio" aria-hidden="true">
+            <span class="checkout-payment-radio-dot"></span>
+        </span>
+
+        <?php if ($icon !== ''): ?>
+            <img src="<?= $escaper->escapeUrl($icon) ?>"
+                 alt="<?= $escaper->escapeHtmlAttr($title) ?>"
+                 class="checkout-payment-logo"/>
+        <?php else: ?>
+            <span class="checkout-payment-logo checkout-payment-logo--fallback">
+                <?= $escaper->escapeHtml($badge) ?>
+            </span>
+        <?php endif ?>
+
+        <span class="checkout-payment-title"><?= $escaper->escapeHtml($title) ?></span>
+
+        <?php if (!empty($method['surcharge_formatted'])): ?>
+            <span class="checkout-payment-surcharge">
+                <?= $escaper->escapeHtml($method['surcharge_formatted']) ?>
+            </span>
+        <?php endif ?>
+    </button>
+
+    <?php if ($isSelected && ($instructions !== '' || $formTpl)): ?>
+    <div class="checkout-payment-method-body">
+        <?php if ($formTpl): ?>
+            <?= $block->getLayout()
+                ->createBlock(\Magento\Framework\View\Element\Template::class)
+                ->setTemplate($formTpl)
+                ->setData('instructions', $instructions)
+                ->toHtml() ?>
+        <?php else: ?>
+            <p class="text-xs text-gray-500 leading-relaxed pt-3">
+                <?= /* @noEscape */ $escaper->escapeHtml(
+                    strip_tags($instructions, '<br><strong><em><a>')
+                ) ?>
+            </p>
+        <?php endif ?>
+    </div>
+    <?php endif ?>
+
+</div>

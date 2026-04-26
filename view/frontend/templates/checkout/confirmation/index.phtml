@@ -2,6 +2,12 @@
 /**
  * Order confirmation page.
  *
+ * Reads the just-placed order from the checkout session and renders a
+ * thank-you panel with the order number, the customer email Magento sent
+ * the confirmation to, and the grand total. The new-order email is
+ * dispatched by Magento's standard sales_order_place_after observer; we
+ * don't trigger it from here.
+ *
  * @var \Magento\Framework\View\Element\Template $block
  * @var \Magento\Framework\Escaper $escaper
  */
@@ -9,42 +15,69 @@ declare(strict_types=1);
 
 /** @var \Magento\Checkout\Model\Session $checkoutSession */
 $checkoutSession = $block->getData('checkoutSession')
-    ?? \Magento\Framework\App\ObjectManager::getInstance()->get(\Magento\Checkout\Model\Session::class);
+    ?? \Magento\Framework\App\ObjectManager::getInstance()
+        ->get(\Magento\Checkout\Model\Session::class);
 
-$lastOrder = $checkoutSession->getLastRealOrder();
-$incrementId = $lastOrder ? $lastOrder->getIncrementId() : null;
+/** @var \Magento\Framework\Pricing\PriceCurrencyInterface $priceCurrency */
+$priceCurrency = \Magento\Framework\App\ObjectManager::getInstance()
+    ->get(\Magento\Framework\Pricing\PriceCurrencyInterface::class);
+
+$lastOrder   = $checkoutSession->getLastRealOrder();
+$incrementId = $lastOrder && $lastOrder->getId() ? $lastOrder->getIncrementId() : null;
+$email       = $lastOrder && $lastOrder->getId() ? (string) $lastOrder->getCustomerEmail() : '';
+$grandTotal  = $lastOrder && $lastOrder->getId()
+    ? $priceCurrency->format((float) $lastOrder->getGrandTotal(), false)
+    : '';
 ?>
 
-<div class="max-w-2xl mx-auto px-4 py-16 text-center">
+<div class="checkout-confirmation">
 
-    <div class="inline-flex items-center justify-center w-20 h-20 rounded-full bg-green-100 mb-6">
-        <svg xmlns="http://www.w3.org/2000/svg" class="w-10 h-10 text-green-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+    <div class="checkout-confirmation-icon" aria-hidden="true">
+        <svg xmlns="http://www.w3.org/2000/svg" width="40" height="40" fill="none"
+             viewBox="0 0 24 24" stroke="currentColor">
             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/>
         </svg>
     </div>
 
-    <h1 class="text-3xl font-bold text-gray-900 mb-3">
+    <h1 class="checkout-confirmation-title">
         <?= $escaper->escapeHtml(__('Thank you for your order!')) ?>
     </h1>
 
     <?php if ($incrementId): ?>
-    <p class="text-gray-600 text-lg mb-6">
-        <?= $escaper->escapeHtml(__('Your order number is:')) ?>
-        <strong class="text-gray-900">#<?= $escaper->escapeHtml($incrementId) ?></strong>
+    <p class="checkout-confirmation-lead">
+        <?= $escaper->escapeHtml(__('Your order number is')) ?>
+        <strong>#<?= $escaper->escapeHtml($incrementId) ?></strong>
     </p>
     <?php endif ?>
 
-    <p class="text-gray-500 mb-8">
-        <?= $escaper->escapeHtml(__('A confirmation email has been sent to you. We\'ll notify you when your order ships.')) ?>
+    <?php if ($email !== '' || $grandTotal !== ''): ?>
+    <dl class="checkout-confirmation-meta">
+        <?php if ($email !== ''): ?>
+        <div>
+            <dt><?= $escaper->escapeHtml(__('Confirmation sent to')) ?></dt>
+            <dd><?= $escaper->escapeHtml($email) ?></dd>
+        </div>
+        <?php endif ?>
+        <?php if ($grandTotal !== ''): ?>
+        <div>
+            <dt><?= $escaper->escapeHtml(__('Total paid')) ?></dt>
+            <dd><?= $escaper->escapeHtml($grandTotal) ?></dd>
+        </div>
+        <?php endif ?>
+    </dl>
+    <?php endif ?>
+
+    <p class="checkout-confirmation-note">
+        <?= $escaper->escapeHtml(__('We\'ll email you again as soon as your order ships.')) ?>
     </p>
 
-    <div class="flex flex-col sm:flex-row gap-3 justify-center">
+    <div class="checkout-confirmation-actions">
         <a href="<?= $escaper->escapeUrl($block->getUrl('sales/order/history')) ?>"
-           class="inline-flex items-center justify-center px-6 py-3 bg-blue-600 text-white font-medium rounded-lg hover:bg-blue-700 transition-colors">
+           class="checkout-btn">
             <?= $escaper->escapeHtml(__('View my orders')) ?>
         </a>
         <a href="<?= $escaper->escapeUrl($block->getUrl()) ?>"
-           class="inline-flex items-center justify-center px-6 py-3 border border-gray-300 text-gray-700 font-medium rounded-lg hover:bg-gray-50 transition-colors">
+           class="checkout-btn checkout-btn-secondary">
             <?= $escaper->escapeHtml(__('Continue shopping')) ?>
         </a>
     </div>
