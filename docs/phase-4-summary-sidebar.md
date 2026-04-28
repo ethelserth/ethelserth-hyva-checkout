@@ -381,4 +381,4 @@ Three components is the right granularity here.
 ---
 
 *Previous: [Phase 3 — Shipping Step](./phase-3-shipping-step.md)*
-*Next: Phase 5 — Payment Step (see PROGRESS.md)*
+*Next: [Phase 5 — Payment Step](./phase-5-payment-step.md)*

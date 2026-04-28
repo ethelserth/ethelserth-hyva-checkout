@@ -32,6 +32,8 @@ $isDisabled   = $error !== null;
        :class="$wire.selectedCarrier === '<?= $escaper->escapeJs($carrier) ?>'
             && $wire.selectedMethod === '<?= $escaper->escapeJs($methodCode) ?>'
             ? 'is-selected' : ''"
+       wire:loading.class="is-loading"
+       wire:target="selectMethod"
        <?= $isDisabled ? 'aria-disabled="true"' : '' ?>>
 
     <input type="radio"

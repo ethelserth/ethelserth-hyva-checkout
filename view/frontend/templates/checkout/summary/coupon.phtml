@@ -50,8 +50,18 @@ $successMessage = $magewire->successMessage;
         <button type="button"
                 wire:click="applyCoupon"
                 wire:loading.attr="disabled"
+                wire:target="applyCoupon"
                 class="checkout-btn checkout-btn-secondary checkout-coupon-apply">
-            <?= $escaper->escapeHtml(__('Apply')) ?>
+            <span wire:loading.remove wire:target="applyCoupon">
+                <?= $escaper->escapeHtml(__('Apply')) ?>
+            </span>
+            <span wire:loading wire:target="applyCoupon" style="display:none" class="inline-flex items-center gap-1">
+                <svg class="animate-spin" width="12" height="12" fill="none" viewBox="0 0 24 24" aria-hidden="true">
+                    <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"/>
+                    <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"/>
+                </svg>
+                <?= $escaper->escapeHtml(__('Applying…')) ?>
+            </span>
         </button>
     </div>
 

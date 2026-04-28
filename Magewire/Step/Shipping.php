@@ -129,6 +129,25 @@ class Shipping extends Component
         return $this->complete;
     }
 
+    /**
+     * User-driven retry after a rate-fetch failure (transient carrier API
+     * outage, network blip). Forces a fresh `collectShippingRates` instead of
+     * just re-reading persisted rows — that's the whole point.
+     */
+    public function retryRates(): void
+    {
+        $this->errorMessage = '';
+
+        try {
+            $quote = $this->checkoutSession->getQuote();
+            $rates = $this->quoteService->getShippingRates($quote);
+            $this->methods = $this->methodDecorator->decorate($rates);
+        } catch (\Throwable $e) {
+            $this->logger->error('Shipping rate retry failed', ['exception' => $e]);
+            $this->errorMessage = (string) __('Shipping rates are still unavailable. Please try again in a moment.');
+        }
+    }
+
     public function onEditRequested(string $step): void
     {
         if ($step !== 'shipping') {

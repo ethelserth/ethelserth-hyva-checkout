@@ -12,6 +12,13 @@ $steps = $block->getSteps();
 $stepsJson = $block->getStepsJson();
 ?>
 
+<?php /* No `defer` here on purpose. Hyvä loads Alpine as `<script type="module" defer>`
+        in `<head>`, which runs after DOM parse. This synchronous script in the
+        body parses BEFORE Alpine's deferred module executes, so its
+        `addEventListener('alpine:init', …)` is registered in time to catch the
+        event Alpine fires on init. Adding `defer` here would put both scripts
+        in the deferred queue and our listener would register AFTER Alpine
+        already dispatched alpine:init — silently breaking the store. */ ?>
 <script src="<?= $escaper->escapeUrl($block->getViewFileUrl('Ethelserth_Checkout::js/checkout/store.js')) ?>"></script>
 
 <div
@@ -23,6 +30,7 @@ $stepsJson = $block->getStepsJson();
     @shipping-method-selected.window="$store.checkout.advance('shipping', 'payment')"
     @step-edit-requested.window="$store.checkout.reopenStep($event.detail[0] ?? $event.detail)"
     @order-placed.window="window.location.href = '/checkout/success'"
+    @checkout-session-expired.window="window.alert($event.detail.message ?? 'Your checkout session has expired.'); window.location.href = '/checkout/cart'"
 >
 
     <div class="flex flex-col lg:grid lg:grid-cols-12 lg:gap-x-12 xl:gap-x-16">

@@ -23,6 +23,11 @@
         border-radius: var(--radius-lg);
         border: 1px solid var(--color-gray-200);
         background-color: var(--color-surface);
+        /* `min-width: 0` lets the section shrink inside a flex/grid parent
+           on narrow viewports — without it, long unbreakable strings (very
+           long postcode / VAT, untranslated method title) push horizontal
+           scroll on 320px screens. */
+        min-width: 0;
         overflow: hidden;
         transition: border-color 200ms ease, box-shadow 200ms ease;
     }
@@ -81,6 +86,11 @@
     }
 
     .checkout-edit-btn {
+        /* WCAG 2.5.5 — 44×44 minimum tap target. Padding gives the
+           visually small text-link a generous hit area. */
+        min-height: 44px;
+        padding: 0.5rem 0.75rem;
+        margin: -0.5rem -0.75rem;
         font-size: 0.8rem;
         font-weight: 500;
         color: var(--color-primary);
@@ -88,12 +98,20 @@
         border: none;
         cursor: pointer;
         transition: color 200ms ease;
+        display: inline-flex;
+        align-items: center;
     }
 
     .checkout-edit-btn:hover {
         color: var(--color-primary, var(--color-slate-700));
         text-decoration: underline;
         text-underline-offset: 2px;
+    }
+
+    .checkout-edit-btn:focus-visible {
+        outline: 2px solid var(--color-primary);
+        outline-offset: 2px;
+        border-radius: 0.25rem;
     }
 
     /* ──────────────────────────────────────────────────────────────
@@ -347,6 +365,38 @@
 
     .checkout-option.is-disabled:hover {
         border-color: var(--color-gray-200);
+    }
+
+    /* Selecting a row triggers a Magewire round-trip — fade the row so the
+       click is visibly acknowledged even if the response takes a beat. */
+    .checkout-option.is-loading {
+        opacity: 0.6;
+        cursor: progress;
+    }
+
+    /* Inline retry button shown next to a `role="alert"` failure message
+       (e.g. shipping rate fetch). Visually muted so it doesn't compete
+       with the alert text. */
+    .checkout-error-retry {
+        flex-shrink: 0;
+        padding: 0.375rem 0.75rem;
+        background-color: rgba(255, 255, 255, 0.5);
+        border: 1px solid currentColor;
+        border-radius: var(--radius-md);
+        font-size: 0.8125rem;
+        font-weight: 500;
+        color: inherit;
+        cursor: pointer;
+        transition: background-color 150ms ease;
+    }
+
+    .checkout-error-retry:hover:not(:disabled) {
+        background-color: rgba(255, 255, 255, 0.85);
+    }
+
+    .checkout-error-retry:disabled {
+        opacity: 0.55;
+        cursor: not-allowed;
     }
 
     .checkout-option-price {

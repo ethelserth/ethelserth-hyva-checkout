@@ -155,6 +155,18 @@ class Payment extends Component
         } catch (LocalizedException $e) {
             $this->placing = false;
             $this->dispatchErrorMessage($e->getMessage());
+        } catch (\Magento\Framework\Exception\NoSuchEntityException $e) {
+            // Quote / order entity disappeared mid-flight — almost always a
+            // session expiry or a tab opened from stale cart state. Send the
+            // shopper back to the cart instead of stranding them on a form
+            // whose underlying quote no longer exists.
+            $this->placing = false;
+            $this->logger->warning(
+                '[Ethelserth_Checkout] placeOrder hit a missing entity: ' . $e->getMessage()
+            );
+            $this->dispatchBrowserEvent('checkout-session-expired', [
+                'message' => (string) __('Your checkout session has expired. Please return to your cart.'),
+            ]);
         } catch (\Throwable $e) {
             $this->placing = false;
             $this->logger->critical(

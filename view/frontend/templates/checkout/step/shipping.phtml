@@ -23,8 +23,24 @@ $summary         = $magewire->getSelectedSummary();
 <div>
 
     <?php if ($errorMessage): ?>
-    <div role="alert" class="checkout-error mb-4">
-        <?= $escaper->escapeHtml($errorMessage) ?>
+    <div role="alert" class="checkout-error mb-4 flex items-start justify-between gap-3">
+        <span><?= $escaper->escapeHtml($errorMessage) ?></span>
+        <button type="button"
+                wire:click="retryRates"
+                wire:loading.attr="disabled"
+                wire:target="retryRates"
+                class="checkout-error-retry">
+            <span wire:loading.remove wire:target="retryRates">
+                <?= $escaper->escapeHtml(__('Retry')) ?>
+            </span>
+            <span wire:loading wire:target="retryRates" style="display:none" class="inline-flex items-center gap-1">
+                <svg class="animate-spin" width="12" height="12" fill="none" viewBox="0 0 24 24" aria-hidden="true">
+                    <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"/>
+                    <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"/>
+                </svg>
+                <?= $escaper->escapeHtml(__('Retrying…')) ?>
+            </span>
+        </button>
     </div>
     <?php endif ?>
 
