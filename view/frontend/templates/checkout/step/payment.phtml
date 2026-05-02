@@ -19,6 +19,10 @@ $selectedMethod = $magewire->selectedMethod;
 $placing        = $magewire->placing;
 $grandTotal     = $magewire->getGrandTotalFormatted();
 $jsAssets       = $magewire->jsAssets ?? [];
+
+/** @var \Ethelserth\Checkout\ViewModel\OrderCommentsConfig $orderCommentsConfig */
+$orderCommentsConfig = $block->getData('order_comments_config');
+$currentStep         = 'payment';
 ?>
 
 <div>
@@ -38,6 +42,11 @@ $jsAssets       = $magewire->jsAssets ?? [];
             <script src="<?= $escaper->escapeUrl($asset) ?>" defer></script>
         <?php endforeach ?>
     <?php endif ?>
+
+    <?php /* Order comments — renders only when admin placement === 'payment'. */ ?>
+    <?php if ($orderCommentsConfig instanceof \Ethelserth\Checkout\ViewModel\OrderCommentsConfig):
+        include __DIR__ . '/../shared/order-comments.phtml';
+    endif ?>
 
     <div class="checkout-payment-cta">
         <button type="button"

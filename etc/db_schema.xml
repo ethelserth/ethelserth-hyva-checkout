@@ -1,0 +1,33 @@
+<?xml version="1.0"?>
+<!--
+    Adds an `order_comments` column to both `quote` and `sales_order`.
+
+    - varchar(1000) — generous but bounded so a server-side `mb_substr`
+      cap matches the column ceiling. Don't widen this without also
+      bumping `Sanitizer::MAX_LENGTH`.
+    - nullable — most stores will leave it empty most of the time, and
+      the field is admin-toggleable, so a NOT NULL constraint would
+      break installs where the toggle is off.
+    - comment — surfaces in `bin/magento setup:db-declaration:generate-whitelist`
+      and in DB tooling so future maintainers see what the column is for.
+-->
+<schema xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+        xsi:noNamespaceSchemaLocation="urn:magento:framework:Setup/Declaration/Schema/etc/schema.xsd">
+
+    <table name="quote">
+        <column xsi:type="varchar"
+                name="order_comments"
+                length="1000"
+                nullable="true"
+                comment="Customer-supplied order comments captured during checkout (Ethelserth_Checkout)"/>
+    </table>
+
+    <table name="sales_order">
+        <column xsi:type="varchar"
+                name="order_comments"
+                length="1000"
+                nullable="true"
+                comment="Customer-supplied order comments copied from the quote on submit (Ethelserth_Checkout)"/>
+    </table>
+
+</schema>

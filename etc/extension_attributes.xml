@@ -1,0 +1,23 @@
+<?xml version="1.0"?>
+<!--
+    Exposes `order_comments` to REST API consumers on both the active cart
+    (Cart) and the placed order (Order). The actual DB column lives on
+    `quote.order_comments` / `sales_order.order_comments` (see db_schema.xml)
+    — extension attributes are the API surface, not the storage.
+
+    Wire-up (column ↔ extension attribute) is done by the four
+    `ExtensionAttributes` plugins in etc/di.xml so REST consumers can
+    both read AND write the value via the standard cart/order endpoints.
+-->
+<config xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+        xsi:noNamespaceSchemaLocation="urn:magento:framework:Api/etc/extension_attributes.xsd">
+
+    <extension_attributes for="Magento\Quote\Api\Data\CartInterface">
+        <attribute code="order_comments" type="string"/>
+    </extension_attributes>
+
+    <extension_attributes for="Magento\Sales\Api\Data\OrderInterface">
+        <attribute code="order_comments" type="string"/>
+    </extension_attributes>
+
+</config>

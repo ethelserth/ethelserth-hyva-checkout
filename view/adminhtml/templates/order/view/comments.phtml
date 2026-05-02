@@ -1,0 +1,55 @@
+<?php
+/**
+ * Admin order view — order comments panel.
+ *
+ * Reads `order_comments` from the current order. Renders nothing when
+ * the column is empty (legacy orders, orders placed while the field
+ * was disabled). When non-empty, displays the value escaped through
+ * `escapeHtml` and converts newlines to `<br/>` so multi-line shopper
+ * notes render readably.
+ *
+ * Security:
+ *   - The value was sanitised on every write path (Magewire, observer,
+ *     repository plugins) so `<script>` etc. never reaches the column.
+ *   - Even so, ALL output here goes through `escapeHtml` — defense in
+ *     depth. We never use raw output / `nl2br` directly on the value
+ *     without escaping first; that would be the classic mistake.
+ *
+ * @var \Magento\Sales\Block\Adminhtml\Order\View $block
+ * @var \Magento\Framework\Escaper $escaper
+ */
+declare(strict_types=1);
+
+$order = $block->getOrder();
+if (!$order) {
+    return;
+}
+
+$value = (string) $order->getData('order_comments');
+if (trim($value) === '') {
+    return;
+}
+
+// Escape FIRST, then convert escaped \n to <br/> — never the other way around.
+$escaped     = $escaper->escapeHtml($value);
+$asMultiline = nl2br($escaped, false);
+?>
+
+<section class="admin__page-section">
+    <div class="admin__page-section-title">
+        <span class="title"><?= $escaper->escapeHtml(__('Order Comments')) ?></span>
+    </div>
+    <div class="admin__page-section-content">
+        <div class="order-comments-content"
+             style="white-space: normal;
+                    background: #f8f8f8;
+                    border: 1px solid #e3e3e3;
+                    padding: 12px 14px;
+                    border-radius: 3px;
+                    font-size: 13px;
+                    line-height: 1.5;
+                    color: #303030;">
+            <?= /* @noEscape — already escaped above */ $asMultiline ?>
+        </div>
+    </div>
+</section>

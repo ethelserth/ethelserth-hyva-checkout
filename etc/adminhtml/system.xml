@@ -25,6 +25,36 @@
                     </depends>
                 </field>
             </group>
+            <group id="order_comments" translate="label" type="text" sortOrder="20" showInDefault="1" showInWebsite="1" showInStore="1">
+                <label>Order Comments</label>
+                <field id="enabled" translate="label comment" type="select" sortOrder="10" showInDefault="1" showInWebsite="1" showInStore="1">
+                    <label>Enable Order Comments Field</label>
+                    <comment>Shows a free-text "order notes" textarea during checkout. The text is sanitised (HTML stripped, control bytes removed, capped at 1000 chars) and stored on the quote and the placed order. Visible in the admin order view regardless of this toggle so historical comments stay readable if you turn it off later.</comment>
+                    <source_model>Magento\Config\Model\Config\Source\Yesno</source_model>
+                </field>
+                <field id="placement" translate="label comment" type="select" sortOrder="20" showInDefault="1" showInWebsite="1" showInStore="1">
+                    <label>Field Placement</label>
+                    <comment>Where the textarea appears in the checkout. "Address step" sits above the Continue button (better for shoppers planning ahead, e.g. delivery instructions). "Payment step" sits above Place Order (better for last-minute notes, gift messages). Toggle this if your shoppers tell you the field feels misplaced.</comment>
+                    <source_model>Ethelserth\Checkout\Model\Config\Source\OrderCommentsPlacement</source_model>
+                    <depends>
+                        <field id="enabled">1</field>
+                    </depends>
+                </field>
+                <field id="label" translate="label comment" type="text" sortOrder="30" showInDefault="1" showInWebsite="1" showInStore="1">
+                    <label>Field Label</label>
+                    <comment>Translatable label shown above the textarea. Defaults to "Order notes (optional)".</comment>
+                    <depends>
+                        <field id="enabled">1</field>
+                    </depends>
+                </field>
+                <field id="placeholder" translate="label comment" type="text" sortOrder="40" showInDefault="1" showInWebsite="1" showInStore="1">
+                    <label>Placeholder</label>
+                    <comment>Hint shown inside an empty textarea, e.g. "Delivery instructions, gift message, scheduling…".</comment>
+                    <depends>
+                        <field id="enabled">1</field>
+                    </depends>
+                </field>
+            </group>
         </section>
     </system>
 </config>

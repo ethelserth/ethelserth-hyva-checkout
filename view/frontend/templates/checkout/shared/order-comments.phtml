@@ -1,0 +1,96 @@
+<?php
+/**
+ * Order comments — shared textarea partial.
+ *
+ * Included from BOTH `step/address.phtml` AND `step/payment.phtml`.
+ * The `shouldRenderIn($currentStep)` gate makes sure only the step
+ * matching the admin "placement" config actually emits the textarea —
+ * the other one returns silently.
+ *
+ * Variables expected from the parent include():
+ *   string                                            $currentStep   'address' | 'payment'
+ *   \Ethelserth\Checkout\ViewModel\OrderCommentsConfig $orderCommentsConfig
+ *
+ * The textarea is bound directly to `$wire.orderComments` (the
+ * `$orderComments` public property on whichever Magewire component
+ * mounts this partial — Address or Payment, both `use HasOrderComments`).
+ *
+ * Persistence (TWO paths — belt + braces):
+ *
+ *   1. Alpine `@blur="$wire.saveOrderComments"` — fires when the
+ *      textarea loses focus. Triggers the standalone save action.
+ *      Magewire 1.x has NO `wire:blur` directive (only wire:click,
+ *      wire:keydown, wire:keyup, wire:loading.*) — `wire:blur` is
+ *      a silent no-op. Don't be tempted to "simplify" this back.
+ *
+ *   2. `applyOrderCommentsToQuote()` is called from the parent
+ *      step's own action (`saveAddress` in Address placement,
+ *      `placeOrder` in Payment placement) so the deferred value
+ *      ALWAYS reaches the column even if the shopper never blurred
+ *      the field before clicking the CTA. Without this server-side
+ *      fallback, the bug we hit on first integration would still be
+ *      live: deferred values arrive with the placeOrder round-trip
+ *      but nothing reads them.
+ *
+ * Either path is sufficient on its own — we ship both because the
+ * Alpine path is "save-while-typing UX" and the server path is "data
+ * integrity."
+ *
+ * Security:
+ *   - `maxlength` matches `Sanitizer::MAX_LENGTH` (1000).
+ *   - All escapeHtmlAttr/escapeHtml on output.
+ *   - Server-side sanitiser (strip_tags + control bytes + length cap)
+ *     runs in `saveOrderComments` regardless of what the client sends.
+ *
+ * @var \Magento\Framework\View\Element\Template $block
+ * @var \Magento\Framework\Escaper $escaper
+ * @var string $currentStep
+ * @var \Ethelserth\Checkout\ViewModel\OrderCommentsConfig $orderCommentsConfig
+ */
+declare(strict_types=1);
+
+if (!isset($orderCommentsConfig, $currentStep)) {
+    return;
+}
+
+if (!$orderCommentsConfig->shouldRenderIn($currentStep)) {
+    return;
+}
+
+$label       = $orderCommentsConfig->getLabel();
+$placeholder = $orderCommentsConfig->getPlaceholder();
+$maxLength   = $orderCommentsConfig->getMaxLength();
+$fieldId     = 'checkout-order-comments-' . $escaper->escapeHtmlAttr($currentStep);
+?>
+
+<div class="checkout-order-comments"
+     x-data="{ remaining() { return <?= (int) $maxLength ?> - ($wire.orderComments || '').length } }">
+
+    <label for="<?= $escaper->escapeHtmlAttr($fieldId) ?>" class="checkout-order-comments-label">
+        <?= $escaper->escapeHtml($label) ?>
+    </label>
+
+    <textarea id="<?= $escaper->escapeHtmlAttr($fieldId) ?>"
+              wire:model.defer="orderComments"
+              @blur="$wire.saveOrderComments"
+              maxlength="<?= (int) $maxLength ?>"
+              rows="3"
+              placeholder="<?= $escaper->escapeHtmlAttr($placeholder) ?>"
+              class="checkout-order-comments-textarea"
+              autocomplete="off"
+              spellcheck="true"></textarea>
+
+    <p class="checkout-order-comments-meta">
+        <span wire:loading wire:target="saveOrderComments" style="display:none" class="checkout-order-comments-saving">
+            <svg class="animate-spin" width="10" height="10" fill="none" viewBox="0 0 24 24" aria-hidden="true">
+                <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"/>
+                <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"/>
+            </svg>
+            <?= $escaper->escapeHtml(__('Saving…')) ?>
+        </span>
+        <span wire:loading.remove wire:target="saveOrderComments" class="checkout-order-comments-counter">
+            <span x-text="remaining()"></span> <?= $escaper->escapeHtml(__('characters left')) ?>
+        </span>
+    </p>
+
+</div>

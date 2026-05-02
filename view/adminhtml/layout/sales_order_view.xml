@@ -1,0 +1,22 @@
+<?xml version="1.0"?>
+<!--
+    Adds the order-comments display to the admin order detail view.
+    Lives inside `order_info` (the right-hand column on the order page),
+    visually next to "Account Information" / "Order Totals".
+
+    The block is rendered unconditionally; its template no-ops when the
+    column is empty so historical orders without a comment don't render
+    an empty card. We deliberately do NOT consult the admin toggle here
+    — the toggle gates COLLECTION (frontend), not DISPLAY (admin), so
+    legacy orders stay readable after the field is turned off.
+-->
+<page xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+      xsi:noNamespaceSchemaLocation="urn:magento:framework:View/Layout/etc/page_configuration.xsd">
+    <body>
+        <referenceContainer name="order_additional_info">
+            <block class="Magento\Sales\Block\Adminhtml\Order\View"
+                   name="order_info_order_comments"
+                   template="Ethelserth_Checkout::order/view/comments.phtml"/>
+        </referenceContainer>
+    </body>
+</page>

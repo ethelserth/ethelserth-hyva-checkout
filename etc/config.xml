@@ -6,6 +6,12 @@
             <address_lookup>
                 <enabled>0</enabled>
             </address_lookup>
+            <order_comments>
+                <enabled>0</enabled>
+                <placement>payment</placement>
+                <label>Order notes (optional)</label>
+                <placeholder>Delivery instructions, gift message, scheduling…</placeholder>
+            </order_comments>
         </ethelserth_checkout>
     </default>
 </config>

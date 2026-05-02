@@ -1,0 +1,12 @@
+{
+    "quote": {
+        "column": {
+            "order_comments": true
+        }
+    },
+    "sales_order": {
+        "column": {
+            "order_comments": true
+        }
+    }
+}

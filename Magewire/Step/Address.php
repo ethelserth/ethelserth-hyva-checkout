@@ -3,8 +3,11 @@ declare(strict_types=1);
 
 namespace Ethelserth\Checkout\Magewire\Step;
 
+use Ethelserth\Checkout\Magewire\Concern\HasOrderComments;
 use Ethelserth\Checkout\Model\Address\FieldConfig;
+use Ethelserth\Checkout\Model\OrderComments\Sanitizer as OrderCommentsSanitizer;
 use Ethelserth\Checkout\Model\Quote\QuoteService;
+use Ethelserth\Checkout\ViewModel\OrderCommentsConfig;
 use Magento\Checkout\Model\Session as CheckoutSession;
 use Magento\Customer\Api\AddressRepositoryInterface;
 use Magento\Customer\Model\Session as CustomerSession;
@@ -20,6 +23,8 @@ use Magewirephp\Magewire\Component;
 
 class Address extends Component
 {
+    use HasOrderComments;
+
     // ── Shipping address fields ───────────────────────────────────────────────
 
     public string $email      = '';
@@ -80,12 +85,21 @@ class Address extends Component
         private readonly PostcodeValidator $postcodeValidator,
         private readonly PostcodeConfig $postcodeConfig,
         private readonly DirectoryHelper $directoryHelper,
+        private readonly OrderCommentsSanitizer $orderCommentsSanitizer,
+        private readonly OrderCommentsConfig $orderCommentsConfig,
     ) {}
+
+    // ── HasOrderComments trait wiring ─────────────────────────────────────────
+    protected function getOrderCommentsCheckoutSession(): CheckoutSession        { return $this->checkoutSession; }
+    protected function getOrderCommentsQuoteService(): QuoteService              { return $this->quoteService; }
+    protected function getOrderCommentsSanitizer(): OrderCommentsSanitizer       { return $this->orderCommentsSanitizer; }
+    protected function getOrderCommentsConfig(): OrderCommentsConfig             { return $this->orderCommentsConfig; }
 
     public function boot(): void
     {
         $this->errorMessage = '';
         $this->isLoggedIn   = $this->customerSession->isLoggedIn();
+        $this->bootOrderComments();
 
         $defaultCountry = (string) $this->scopeConfig->getValue(
             'general/country/default',
@@ -189,6 +203,13 @@ class Address extends Component
                 'telephone'  => $this->billingTelephone,
             ]);
         }
+
+        // Stamp the deferred order_comments value onto the quote BEFORE
+        // collectAndSave persists. Without this, a comment typed in the
+        // Address-step placement would never reach the column —
+        // `wire:blur` isn't a Magewire directive, so the only round-trip
+        // carrying the value is this one (saveAddress).
+        $this->applyOrderCommentsToQuote();
 
         // Fires VatValidator observer — assigns customer group for 0% intra-EU VAT if applicable
         $this->quoteService->collectAndSave($quote);

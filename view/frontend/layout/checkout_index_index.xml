@@ -24,6 +24,7 @@
                     <arguments>
                         <argument name="magewire" xsi:type="object">Ethelserth\Checkout\Magewire\Step\Address</argument>
                         <argument name="field_config" xsi:type="object">Ethelserth\Checkout\Model\Address\FieldConfig</argument>
+                        <argument name="order_comments_config" xsi:type="object">Ethelserth\Checkout\ViewModel\OrderCommentsConfig</argument>
                     </arguments>
                 </block>
 
@@ -40,6 +41,7 @@
                        template="Ethelserth_Checkout::checkout/step/payment.phtml">
                     <arguments>
                         <argument name="magewire" xsi:type="object">Ethelserth\Checkout\Magewire\Step\Payment</argument>
+                        <argument name="order_comments_config" xsi:type="object">Ethelserth\Checkout\ViewModel\OrderCommentsConfig</argument>
                     </arguments>
                 </block>
 

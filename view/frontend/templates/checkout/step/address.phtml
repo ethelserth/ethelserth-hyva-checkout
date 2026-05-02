@@ -15,6 +15,10 @@ declare(strict_types=1);
 /** @var \Ethelserth\Checkout\Model\Address\FieldConfig $fieldConfig */
 $fieldConfig = $block->getData('field_config');
 
+/** @var \Ethelserth\Checkout\ViewModel\OrderCommentsConfig $orderCommentsConfig */
+$orderCommentsConfig = $block->getData('order_comments_config');
+$currentStep         = 'address';
+
 $errorMessage          = $magewire->errorMessage;
 $isLoggedIn            = $magewire->isLoggedIn;
 $billingSameAsShipping = $magewire->billingSameAsShipping;
@@ -98,6 +102,11 @@ $summary = $magewire->getAddressSummary();
         $billingTemplate = $block->getTemplateFile('Ethelserth_Checkout::checkout/address/billing-toggle.phtml');
         if ($billingTemplate) include $billingTemplate;
         ?>
+
+        <?php /* Order comments — renders only when admin placement === 'address'. */ ?>
+        <?php if ($orderCommentsConfig instanceof \Ethelserth\Checkout\ViewModel\OrderCommentsConfig):
+            include __DIR__ . '/../shared/order-comments.phtml';
+        endif ?>
 
         <div class="checkout-submit pt-4 border-t border-gray-100 mt-5">
             <button type="submit" class="checkout-btn" wire:loading.attr="disabled">

@@ -3,9 +3,12 @@ declare(strict_types=1);
 
 namespace Ethelserth\Checkout\Magewire\Step;
 
+use Ethelserth\Checkout\Magewire\Concern\HasOrderComments;
+use Ethelserth\Checkout\Model\OrderComments\Sanitizer as OrderCommentsSanitizer;
 use Ethelserth\Checkout\Model\Payment\MethodPool;
 use Ethelserth\Checkout\Model\Quote\QuoteService;
 use Ethelserth\Checkout\Model\Quote\TotalsService;
+use Ethelserth\Checkout\ViewModel\OrderCommentsConfig;
 use Magento\Checkout\Model\Session as CheckoutSession;
 use Magento\Framework\Exception\LocalizedException;
 use Magento\Framework\Pricing\PriceCurrencyInterface;
@@ -22,6 +25,8 @@ use Psr\Log\LoggerInterface;
  */
 class Payment extends Component
 {
+    use HasOrderComments;
+
     public string $selectedMethod = '';
     public bool $placing = false;
 
@@ -58,11 +63,20 @@ class Payment extends Component
         private readonly TotalsService $totalsService,
         private readonly PriceCurrencyInterface $priceCurrency,
         private readonly LoggerInterface $logger,
+        private readonly OrderCommentsSanitizer $orderCommentsSanitizer,
+        private readonly OrderCommentsConfig $orderCommentsConfig,
     ) {}
+
+    // ── HasOrderComments trait wiring ─────────────────────────────────────────
+    protected function getOrderCommentsCheckoutSession(): CheckoutSession        { return $this->checkoutSession; }
+    protected function getOrderCommentsQuoteService(): QuoteService              { return $this->quoteService; }
+    protected function getOrderCommentsSanitizer(): OrderCommentsSanitizer       { return $this->orderCommentsSanitizer; }
+    protected function getOrderCommentsConfig(): OrderCommentsConfig             { return $this->orderCommentsConfig; }
 
     public function boot(): void
     {
         $this->refresh();
+        $this->bootOrderComments();
 
         $quote = $this->checkoutSession->getQuote();
         $existing = (string) $quote->getPayment()->getMethod();
@@ -135,6 +149,17 @@ class Payment extends Component
 
         try {
             $quote = $this->checkoutSession->getQuote();
+
+            // Stamp the deferred order_comments value onto the quote
+            // BEFORE placeOrder runs. Without this, a comment typed in
+            // the Payment-step placement would never reach the column —
+            // `wire:blur` isn't a Magewire directive, so the only
+            // round-trip carrying the value is this one (placeOrder).
+            // The quote→order observer (sales_model_service_quote_submit_before)
+            // then copies the value to sales_order in the same INSERT.
+            $this->applyOrderCommentsToQuote();
+            $this->quoteService->save($quote);
+
             $adapter->beforePlaceOrder($quote);
 
             $orderId = $this->quoteService->placeOrder($quote);

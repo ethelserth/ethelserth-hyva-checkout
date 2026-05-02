@@ -26,4 +26,19 @@
         </arguments>
     </type>
 
+    <!-- Order comments — wire the `order_comments` column through the
+         `order_comments` extension attribute on Cart + Order so REST
+         consumers can read/write the value via the standard endpoints.
+         All four plugin methods sanitize as defense in depth. -->
+    <type name="Magento\Quote\Api\CartRepositoryInterface">
+        <plugin name="ethelserth_checkout_cart_order_comments"
+                type="Ethelserth\Checkout\Plugin\Quote\CartExtensionPlugin"
+                sortOrder="10"/>
+    </type>
+    <type name="Magento\Sales\Api\OrderRepositoryInterface">
+        <plugin name="ethelserth_checkout_order_order_comments"
+                type="Ethelserth\Checkout\Plugin\Sales\OrderExtensionPlugin"
+                sortOrder="10"/>
+    </type>
+
 </config>
