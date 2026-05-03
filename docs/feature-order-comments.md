@@ -630,5 +630,92 @@ Greppable signal: `grep -oE 'wire:[a-z.]+' vendor/magewirephp/magewire/src/view/
 
 ---
 
+## 16. Second Bug We Hit (Same Feature, Different Layer)
+
+After fixing the `wire:blur` no-op, the comment STILL didn't reach the
+column. Trace:
+
+1. Page load → `cartRepository->getActive()` → **`afterGetActive`
+   plugin populates `$ext->orderComments` with the current column
+   value** (`''` for a fresh quote). The extension attribute is now
+   attached to the in-memory cart object for the rest of the request.
+2. Shopper types "leave at door" — `wire:model.defer` keeps it local.
+3. Shopper clicks Place Order. Wire round-trip carries the deferred
+   value into `$this->orderComments`.
+4. `Payment::placeOrder` runs. `applyOrderCommentsToQuote` calls
+   `$quote->setData('order_comments', 'leave at door')` ✓
+5. `quoteService->save($quote)` → `cartRepository->save($quote)` →
+   **`CartExtensionPlugin::beforeSave` fires**.
+6. The plugin reads `$ext->getOrderComments()` — but `$ext` is the
+   SAME object from step 1, **still holding the auto-populated `''`**.
+   The mid-request `setData` didn't update the extension attribute.
+7. The plugin's old `if ($value !== null)` guard treats `''` as "REST
+   consumer wrote a value" and runs `$cart->setData('order_comments',
+   '')` → **overwrites our "leave at door" with `''`** a quarter-
+   second before the actual save SQL.
+8. Empty saved to DB. Observer copies empty to order. Admin shows
+   nothing.
+
+**The fix (in both `CartExtensionPlugin` and `OrderExtensionPlugin`):**
+distinguish "ext was just auto-populated by afterGet" from "REST
+consumer wrote a new value."
+
+Both plugins now compare the cleaned ext value against the model's
+`getOrigData('order_comments')` — i.e. the column value at load time:
+
+```php
+if ($extCleaned === $origData) {
+    // Ext is just the auto-populated copy from afterGet*; a setData()
+    // elsewhere in the request may have changed the column data
+    // already. Trust the column, leave it.
+    return [$cart];
+}
+
+$cart->setData('order_comments', $extCleaned);
+return [$cart];
+```
+
+Match → ext is stale, leave the column alone (so our own setData
+calls survive).
+Differ → REST consumer modified the ext attribute, mirror it to the
+column.
+
+**Why this works for every flow:**
+
+| Flow | `origData` | `ext` | Compare | Action |
+|---|---|---|---|---|
+| Magewire `setData('leave at door')` then save | `''` (from load) | `''` (auto-populated, stale) | match | skip — `'leave at door'` survives ✓ |
+| REST consumer changes ext from `'old'` to `'new'` | `'old'` | `'new'` | differ | apply `'new'` to column ✓ |
+| Sanitizer normalizes `'<b>x</b>'` → `'x'` on read | `'<b>x</b>'` (legacy) | `'x'` (cleaned) | differ | applies `'x'` (legacy upgrade as a side-effect) ✓ |
+| No order_comments at all | `null` cast to `''` | `''` | match | skip ✓ |
+
+**Lessons (the deeper ones):**
+
+- **Auto-populating an extension attribute on `afterGet` is a
+  trap.** The Magento manual loves the pattern, but it creates a
+  stale snapshot the moment any other code mutates the underlying
+  column. If you do this, your `beforeSave` MUST distinguish "I
+  populated this from the load" from "the API consumer wrote a new
+  value here." `getOrigData` is the cheapest way to make that
+  distinction.
+
+- **`null` vs `''` is not the same** in the ext-attribute world.
+  Our first fix attempt was tempted to skip on `$value === ''`, but
+  that breaks the legitimate REST flow where a consumer wants to
+  CLEAR a previously-set comment by setting it to empty. The
+  `origData` comparison is correct; the empty-string short-circuit
+  was wrong.
+
+- **One bug masked another.** The `wire:blur` no-op (§15) was
+  fixed first; the fix routed the deferred value through
+  `applyOrderCommentsToQuote` → `setData`. That `setData` exposed
+  the auto-populate-vs-mid-request-mutation race the plugin had
+  always had — but never triggered when no other layer was setting
+  the column. Two-layer bugs are common when you add a feature on
+  top of an extension-attribute scaffold; check the round-trip path
+  end to end, not just the input layer.
+
+---
+
 *Previous: [Phase 6 — Hardening and UX](./phase-6-hardening.md)*
 *Next: Phase 7 — A/B Testing Hooks (see PROGRESS.md)*

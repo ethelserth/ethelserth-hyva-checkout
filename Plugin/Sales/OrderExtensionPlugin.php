@@ -21,6 +21,13 @@ use Magento\Sales\Api\OrderRepositoryInterface;
  * Both sides sanitize. Reads sanitise too because historical rows
  * could pre-date the sanitiser's existence — never trust DB content
  * to be safe.
+ *
+ * `beforeSave` uses the same `extCleaned === origData` guard as
+ * `CartExtensionPlugin` — see that file's docblock for the full
+ * rationale. Short version: the auto-populated ext from `afterGet`
+ * is stale by the time a `setData()` elsewhere in the request lands
+ * on the column; mirroring ext → data on every save would silently
+ * undo that fresh write.
  */
 class OrderExtensionPlugin
 {
@@ -51,12 +58,28 @@ class OrderExtensionPlugin
         OrderInterface $order
     ): array {
         $ext = $order->getExtensionAttributes();
-        if ($ext !== null && method_exists($ext, 'getOrderComments')) {
-            $value = $ext->getOrderComments();
-            if ($value !== null) {
-                $order->setData('order_comments', $this->sanitizer->sanitize((string) $value));
-            }
+        if ($ext === null || !method_exists($ext, 'getOrderComments')) {
+            return [$order];
         }
+
+        $extValue = $ext->getOrderComments();
+        if ($extValue === null) {
+            return [$order];
+        }
+
+        $extCleaned = $this->sanitizer->sanitize((string) $extValue);
+
+        $origData = (string) ($order instanceof \Magento\Framework\Model\AbstractModel
+            ? $order->getOrigData('order_comments')
+            : null);
+
+        if ($extCleaned === $origData) {
+            // Stale auto-populated ext from `afterGet`. Trust the
+            // column data — see CartExtensionPlugin docblock.
+            return [$order];
+        }
+
+        $order->setData('order_comments', $extCleaned);
         return [$order];
     }
 
