@@ -94,6 +94,14 @@ trait HasOrderComments
         $this->getOrderCommentsQuoteService()->save(
             $this->getOrderCommentsCheckoutSession()->getQuote()
         );
+
+        // Tell the partial to flash its "Saved ✓" pill. The Alpine
+        // x-data on `.checkout-order-comments` listens for this event
+        // and toggles `showSaved` for ~1.5s. Pure UX feedback —
+        // skip on the parent-action path (saveAddress / placeOrder)
+        // so we don't briefly flash a confirmation that the shopper
+        // didn't ask for.
+        $this->dispatchBrowserEvent('order-comments-saved');
     }
 
     abstract protected function getOrderCommentsCheckoutSession(): \Magento\Checkout\Model\Session;

@@ -1,0 +1,90 @@
+<?php
+/**
+ * Terms & conditions checkboxes — pulled live from Magento's native
+ * `Sales > Terms and Conditions` admin section via TermsConfig.
+ *
+ * Each active agreement renders as its own checkbox + content panel.
+ * ALL must be checked for the place-order button to succeed; the
+ * Magewire component validates server-side and exposes
+ * `agreementsError` for failed validation.
+ *
+ * Variables expected from the parent include():
+ *   \Ethelserth\Checkout\ViewModel\TermsConfig $termsConfig
+ *   \Ethelserth\Checkout\Magewire\Step\Payment $magewire
+ *
+ * Security:
+ *   - `getContent` is admin-supplied and may legitimately include HTML
+ *     (links to the full ToS, lists, etc.). We honour `getIsHtml()`:
+ *     when truthy we render the raw HTML (admin-trust boundary, same
+ *     as Magento's own native agreement template); when falsy we
+ *     `escapeHtml` and `nl2br`.
+ *   - The `value="…id"` is cast to int. The Magewire `wire:model.defer`
+ *     property is typed `array` and validated against the allowed-list
+ *     (`getRequiredAgreementIds`) before placement — a forged ID in
+ *     the submission can't satisfy the requirement set.
+ *
+ * @var \Magento\Framework\View\Element\Template $block
+ * @var \Magento\Framework\Escaper $escaper
+ * @var \Ethelserth\Checkout\ViewModel\TermsConfig $termsConfig
+ * @var \Ethelserth\Checkout\Magewire\Step\Payment $magewire
+ */
+declare(strict_types=1);
+
+if (!isset($termsConfig) || !$termsConfig->isEnabled()) {
+    return;
+}
+
+$agreements = $termsConfig->getAgreements();
+if (empty($agreements)) {
+    return;
+}
+
+$error = $magewire->agreementsError;
+?>
+
+<div class="checkout-agreements">
+    <?php foreach ($agreements as $agreement):
+        $id           = (int) $agreement->getAgreementId();
+        $name         = (string) $agreement->getName();
+        $checkboxText = (string) $agreement->getCheckboxText();
+        $content      = (string) $agreement->getContent();
+        $contentH     = (int) ($agreement->getContentHeight() ?: 0);
+        $isHtml       = (bool) $agreement->getIsHtml();
+        $fieldId      = 'checkout-agreement-' . $id;
+        $contentStyle = $contentH > 0 ? 'max-height:' . $contentH . 'px;overflow-y:auto;' : '';
+    ?>
+    <div class="checkout-agreement">
+        <?php if ($content !== ''): ?>
+        <div class="checkout-agreement-content"
+             style="<?= $escaper->escapeHtmlAttr($contentStyle) ?>">
+            <?php if ($isHtml): ?>
+                <?= /* @noEscape — admin-trust, like core's view/frontend/templates/agreements.phtml */
+                    $content ?>
+            <?php else: ?>
+                <?= /* @noEscape — escapeHtml then nl2br */
+                    nl2br($escaper->escapeHtml($content), false) ?>
+            <?php endif ?>
+        </div>
+        <?php endif ?>
+
+        <label for="<?= $escaper->escapeHtmlAttr($fieldId) ?>" class="checkout-checkbox">
+            <input type="checkbox"
+                   id="<?= $escaper->escapeHtmlAttr($fieldId) ?>"
+                   wire:model.defer="acceptedAgreementIds"
+                   value="<?= $id ?>"
+                   class="checkout-checkbox-input"
+                   required/>
+            <span class="checkout-checkbox-label">
+                <?= $escaper->escapeHtml(
+                    $checkboxText !== '' ? $checkboxText : ($name !== '' ? $name : (string) __('I agree to the terms and conditions'))
+                ) ?>
+                <span class="req">*</span>
+            </span>
+        </label>
+    </div>
+    <?php endforeach ?>
+
+    <?php if ($error !== ''): ?>
+    <p class="checkout-field-error" role="alert"><?= $escaper->escapeHtml($error) ?></p>
+    <?php endif ?>
+</div>

@@ -8,10 +8,13 @@ use Ethelserth\Checkout\Model\OrderComments\Sanitizer as OrderCommentsSanitizer;
 use Ethelserth\Checkout\Model\Payment\MethodPool;
 use Ethelserth\Checkout\Model\Quote\QuoteService;
 use Ethelserth\Checkout\Model\Quote\TotalsService;
+use Ethelserth\Checkout\ViewModel\NewsletterConfig;
 use Ethelserth\Checkout\ViewModel\OrderCommentsConfig;
+use Ethelserth\Checkout\ViewModel\TermsConfig;
 use Magento\Checkout\Model\Session as CheckoutSession;
 use Magento\Framework\Exception\LocalizedException;
 use Magento\Framework\Pricing\PriceCurrencyInterface;
+use Magento\Newsletter\Model\SubscriptionManagerInterface;
 use Magewirephp\Magewire\Component;
 use Psr\Log\LoggerInterface;
 
@@ -29,6 +32,24 @@ class Payment extends Component
 
     public string $selectedMethod = '';
     public bool $placing = false;
+
+    /**
+     * Newsletter opt-in checkbox state. Honoured AFTER successful
+     * order placement only — we don't subscribe on a check that
+     * never reaches a placed order.
+     */
+    public bool $subscribeNewsletter = false;
+
+    /**
+     * IDs of terms-and-conditions agreements the shopper has
+     * accepted. Magewire's `wire:model.defer` on a checkbox bound
+     * to an array property toggles values in/out automatically.
+     *
+     * @var int[]
+     */
+    public array $acceptedAgreementIds = [];
+
+    public string $agreementsError = '';
 
     /**
      * @var array<int, array{
@@ -65,6 +86,9 @@ class Payment extends Component
         private readonly LoggerInterface $logger,
         private readonly OrderCommentsSanitizer $orderCommentsSanitizer,
         private readonly OrderCommentsConfig $orderCommentsConfig,
+        private readonly TermsConfig $termsConfig,
+        private readonly NewsletterConfig $newsletterConfig,
+        private readonly SubscriptionManagerInterface $subscriptionManager,
     ) {}
 
     // ── HasOrderComments trait wiring ─────────────────────────────────────────
@@ -134,8 +158,24 @@ class Payment extends Component
 
     public function placeOrder(): void
     {
+        $this->agreementsError = '';
+
         if ($this->selectedMethod === '') {
             $this->dispatchErrorMessage((string) __('Please select a payment method.'));
+            return;
+        }
+
+        // Terms-and-conditions are REQUIRED. Every active agreement
+        // (from `Sales > Terms and Conditions` admin) must be in the
+        // shopper's `acceptedAgreementIds` array, or we abort with an
+        // inline error and DO NOT touch the quote / payment / order.
+        // This mirrors what `Magento\CheckoutAgreements\Model\AgreementsValidator`
+        // does inside the native checkout — re-deriving here saves a
+        // dependency injection while keeping the contract identical.
+        if (!$this->areAllAgreementsAccepted()) {
+            $this->agreementsError = (string) __(
+                'Please agree to the terms and conditions to place your order.'
+            );
             return;
         }
 
@@ -163,6 +203,11 @@ class Payment extends Component
             $adapter->beforePlaceOrder($quote);
 
             $orderId = $this->quoteService->placeOrder($quote);
+
+            // Newsletter opt-in fires AFTER the order placement
+            // succeeds. Wrapped — a failed subscription must NEVER
+            // block the order; we log and move on.
+            $this->maybeSubscribeNewsletter($quote);
 
             // Fresh quote read — `placeOrder` clears the active quote and
             // creates the order; some adapters (PSP redirects) may want
@@ -223,6 +268,64 @@ class Payment extends Component
             }
         }
         return '';
+    }
+
+    /**
+     * Returns true when every active terms-and-conditions agreement
+     * has been checked. Empty active list (or feature disabled) →
+     * trivially true (nothing to require).
+     *
+     * Compares as integers because Magewire ships array-of-string
+     * values from checkbox `value="1"` attributes; the explicit
+     * cast is what makes `in_array(…, …, true)` strict-mode safe.
+     */
+    private function areAllAgreementsAccepted(): bool
+    {
+        $required = $this->termsConfig->getRequiredAgreementIds();
+        if (empty($required)) {
+            return true;
+        }
+        $accepted = array_map('intval', $this->acceptedAgreementIds);
+        foreach ($required as $id) {
+            if (!in_array((int) $id, $accepted, true)) {
+                return false;
+            }
+        }
+        return true;
+    }
+
+    /**
+     * Honour the newsletter opt-in checkbox by subscribing the email
+     * after the order has been placed. Wrapped in `Throwable` because
+     * a subscription failure (mail-server hiccup, SubscriberFactory
+     * config drift, double-opt-in confirmation send error) must
+     * NEVER take an already-placed order down with it.
+     *
+     * Skipped silently when the checkbox is off, the feature is
+     * admin-disabled, or the email is empty — defending against
+     * weird quote states rather than throwing inside what's now a
+     * post-place-order flow.
+     */
+    private function maybeSubscribeNewsletter(\Magento\Quote\Model\Quote $quote): void
+    {
+        if (!$this->subscribeNewsletter || !$this->newsletterConfig->isEnabled()) {
+            return;
+        }
+
+        $email = trim((string) $quote->getCustomerEmail());
+        if ($email === '' || !filter_var($email, FILTER_VALIDATE_EMAIL)) {
+            return;
+        }
+
+        try {
+            $storeId = (int) $quote->getStoreId();
+            $this->subscriptionManager->subscribe($email, $storeId);
+        } catch (\Throwable $e) {
+            $this->logger->warning(
+                '[Ethelserth_Checkout] newsletter subscription failed for placed order: '
+                    . $e->getMessage()
+            );
+        }
     }
 
     private function isMethodInList(string $code): bool

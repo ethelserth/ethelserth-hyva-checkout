@@ -6,6 +6,11 @@
             <address_lookup>
                 <enabled>0</enabled>
             </address_lookup>
+            <newsletter>
+                <enabled>1</enabled>
+                <label>Subscribe to our newsletter</label>
+                <notice>By subscribing you agree to receive marketing emails from us. We process your email solely to send these messages and you can unsubscribe at any time. See our privacy policy for details.</notice>
+            </newsletter>
             <order_comments>
                 <enabled>0</enabled>
                 <placement>payment</placement>

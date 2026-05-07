@@ -42,6 +42,8 @@
                     <arguments>
                         <argument name="magewire" xsi:type="object">Ethelserth\Checkout\Magewire\Step\Payment</argument>
                         <argument name="order_comments_config" xsi:type="object">Ethelserth\Checkout\ViewModel\OrderCommentsConfig</argument>
+                        <argument name="terms_config" xsi:type="object">Ethelserth\Checkout\ViewModel\TermsConfig</argument>
+                        <argument name="newsletter_config" xsi:type="object">Ethelserth\Checkout\ViewModel\NewsletterConfig</argument>
                     </arguments>
                 </block>
 

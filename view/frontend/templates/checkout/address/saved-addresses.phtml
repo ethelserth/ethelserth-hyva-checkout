@@ -1,7 +1,15 @@
 <?php
 /**
- * Saved address selector for logged-in customers.
- * Rendered via include from step/address.phtml.
+ * Saved-address picker for logged-in customers.
+ *
+ * Originally rendered as one button per address — fine for two or three,
+ * unwieldy past five, broken at ten. Switched to a `<select>` so the UI
+ * stays compact regardless of how many addresses the customer has on
+ * file. Default shipping address is pre-selected when present.
+ *
+ * Selecting an option fires the existing `selectSavedAddress($id)`
+ * Magewire action via Alpine `@change` — same `$wire.<method>(args)`
+ * pattern the email-check / order-comments features use.
  *
  * @var \Magento\Framework\View\Element\Template $block
  * @var \Magento\Framework\Escaper $escaper
@@ -12,28 +20,40 @@ declare(strict_types=1);
 if (empty($savedAddresses)) {
     return;
 }
+
+$summarize = static function ($address) use ($escaper): string {
+    $line = trim($address->getFirstname() . ' ' . $address->getLastname());
+    $street = implode(' ', $address->getStreet() ?: []);
+    $tail = trim(($address->getPostcode() ?: '') . ' ' . ($address->getCity() ?: ''));
+    return implode(' · ', array_filter([$line, $street, $tail]));
+};
 ?>
 
 <div class="mb-5">
-    <div class="checkout-divider"><?= $escaper->escapeHtml(__('Your saved addresses')) ?></div>
-    <div class="space-y-2">
+    <label for="checkout-saved-address" class="checkout-label">
+        <?= $escaper->escapeHtml(__('Pick a saved address')) ?>
+    </label>
+    <select id="checkout-saved-address"
+            class="checkout-input"
+            @change="if ($event.target.value) {
+                $wire.selectSavedAddress(parseInt($event.target.value, 10));
+                $event.target.value = '';
+            }">
+        <option value="">
+            <?= $escaper->escapeHtml(__('— Choose from %1 saved addresses —', count($savedAddresses))) ?>
+        </option>
         <?php foreach ($savedAddresses as $address):
-            $id    = (int) $address->getId();
-            $label = implode(', ', array_filter([
-                $address->getFirstname() . ' ' . $address->getLastname(),
-                implode(' ', $address->getStreet() ?: []),
-                $address->getPostcode(),
-                $address->getCity(),
-            ]));
+            $id      = (int) $address->getId();
+            $label   = $summarize($address);
+            $isDefault = $address->isDefaultShipping();
+            if ($isDefault) {
+                $label = (string) __('Default') . ' · ' . $label;
+            }
         ?>
-        <button type="button"
-                wire:click="selectSavedAddress(<?= $id ?>)"
-                class="checkout-choice w-full text-left">
-            <span class="checkout-choice-title"><?= $escaper->escapeHtml($label) ?></span>
-        </button>
+        <option value="<?= $id ?>"><?= $escaper->escapeHtml($label) ?></option>
         <?php endforeach ?>
-    </div>
+    </select>
     <p class="checkout-hint">
-        <?= $escaper->escapeHtml(__('Select an address to pre-fill the form, then edit if needed.')) ?>
+        <?= $escaper->escapeHtml(__('Pre-fills the form below — edit anything before continuing.')) ?>
     </p>
 </div>

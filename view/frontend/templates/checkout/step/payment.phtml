@@ -23,6 +23,12 @@ $jsAssets       = $magewire->jsAssets ?? [];
 /** @var \Ethelserth\Checkout\ViewModel\OrderCommentsConfig $orderCommentsConfig */
 $orderCommentsConfig = $block->getData('order_comments_config');
 $currentStep         = 'payment';
+
+/** @var \Ethelserth\Checkout\ViewModel\TermsConfig|null $termsConfig */
+$termsConfig = $block->getData('terms_config');
+
+/** @var \Ethelserth\Checkout\ViewModel\NewsletterConfig|null $newsletterConfig */
+$newsletterConfig = $block->getData('newsletter_config');
 ?>
 
 <div>
@@ -46,6 +52,17 @@ $currentStep         = 'payment';
     <?php /* Order comments — renders only when admin placement === 'payment'. */ ?>
     <?php if ($orderCommentsConfig instanceof \Ethelserth\Checkout\ViewModel\OrderCommentsConfig):
         include __DIR__ . '/../shared/order-comments.phtml';
+    endif ?>
+
+    <?php /* Newsletter opt-in (renders only when admin-enabled). */ ?>
+    <?php if ($newsletterConfig instanceof \Ethelserth\Checkout\ViewModel\NewsletterConfig):
+        include __DIR__ . '/../payment/newsletter.phtml';
+    endif ?>
+
+    <?php /* Terms & conditions (REQUIRED — renders only when admin
+            has agreements active under Sales > Terms and Conditions). */ ?>
+    <?php if ($termsConfig instanceof \Ethelserth\Checkout\ViewModel\TermsConfig):
+        include __DIR__ . '/../payment/agreements.phtml';
     endif ?>
 
     <div class="checkout-payment-cta">

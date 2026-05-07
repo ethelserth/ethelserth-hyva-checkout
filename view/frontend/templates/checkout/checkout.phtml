@@ -31,6 +31,7 @@ $stepsJson = $block->getStepsJson();
     @step-edit-requested.window="$store.checkout.reopenStep($event.detail[0] ?? $event.detail)"
     @order-placed.window="window.location.href = '/checkout/success'"
     @checkout-session-expired.window="window.alert($event.detail.message ?? 'Your checkout session has expired.'); window.location.href = '/checkout/cart'"
+    @checkout-reload.window="window.location.reload()"
 >
 
     <div class="flex flex-col lg:grid lg:grid-cols-12 lg:gap-x-12 xl:gap-x-16">

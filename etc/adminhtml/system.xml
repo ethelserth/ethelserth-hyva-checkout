@@ -25,6 +25,28 @@
                     </depends>
                 </field>
             </group>
+            <group id="newsletter" translate="label" type="text" sortOrder="15" showInDefault="1" showInWebsite="1" showInStore="1">
+                <label>Newsletter Subscription</label>
+                <field id="enabled" translate="label comment" type="select" sortOrder="10" showInDefault="1" showInWebsite="1" showInStore="1">
+                    <label>Show Newsletter Checkbox at Checkout</label>
+                    <comment>An opt-in checkbox above the place-order button that subscribes the shopper after a successful order. Also requires Magento's native "Allow Guest Subscription" flag (Stores &gt; Config &gt; Customers &gt; Newsletter) and an enabled Magento_Newsletter module.</comment>
+                    <source_model>Magento\Config\Model\Config\Source\Yesno</source_model>
+                </field>
+                <field id="label" translate="label comment" type="text" sortOrder="20" showInDefault="1" showInWebsite="1" showInStore="1">
+                    <label>Checkbox Label</label>
+                    <comment>Translatable. Defaults to "Subscribe to our newsletter".</comment>
+                    <depends>
+                        <field id="enabled">1</field>
+                    </depends>
+                </field>
+                <field id="notice" translate="label comment" type="textarea" sortOrder="30" showInDefault="1" showInWebsite="1" showInStore="1">
+                    <label>GDPR / Consent Notice</label>
+                    <comment>Small print rendered under the checkbox. Translatable. Override per-store with your privacy-policy link if your jurisdiction requires it.</comment>
+                    <depends>
+                        <field id="enabled">1</field>
+                    </depends>
+                </field>
+            </group>
             <group id="order_comments" translate="label" type="text" sortOrder="20" showInDefault="1" showInWebsite="1" showInStore="1">
                 <label>Order Comments</label>
                 <field id="enabled" translate="label comment" type="select" sortOrder="10" showInDefault="1" showInWebsite="1" showInStore="1">

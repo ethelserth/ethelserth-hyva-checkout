@@ -53,7 +53,10 @@
         padding: 1.25rem;
     }
 
-    /* Numeric badge next to the step label. */
+    /* Numeric badge next to the step label.
+       Three states (gray locked → primary active → green done) animate
+       smoothly via transition; the SVG check inside `is-done` comes from
+       the parent template, so the badge only animates background + color. */
     .checkout-step-badge {
         display: inline-flex;
         align-items: center;
@@ -65,13 +68,29 @@
         font-weight: 500;
         background-color: var(--color-gray-200);
         color: var(--color-fg-secondary);
-        transition: background-color 200ms ease, color 200ms ease;
+        transition: background-color 250ms ease, color 250ms ease,
+            transform 250ms cubic-bezier(0.34, 1.56, 0.64, 1);
     }
 
-    .checkout-section.is-active .checkout-step-badge,
-    .checkout-section.is-done .checkout-step-badge {
+    .checkout-section.is-active .checkout-step-badge {
         background-color: var(--color-primary);
         color: var(--color-on-primary);
+        transform: scale(1.05);     /* tiny grow when the step lights up */
+    }
+
+    .checkout-section.is-done .checkout-step-badge {
+        background-color: #10b981;  /* emerald-500 — matches confirmation icon */
+        color: #ffffff;
+    }
+
+    /* Subtle border-color shift as the section transitions through the
+       three states. Catches the eye without being a full color flash. */
+    .checkout-section.is-active {
+        border-color: color-mix(in srgb, var(--color-primary) 35%, var(--color-gray-200));
+        box-shadow: 0 0 0 4px color-mix(in srgb, var(--color-primary) 6%, transparent);
+    }
+    .checkout-section.is-done {
+        border-color: color-mix(in srgb, #10b981 25%, var(--color-gray-200));
     }
 
     .checkout-step-title {
@@ -987,11 +1006,13 @@
         border-radius: 9999px;
         background-color: var(--color-primary);
         opacity: 0;
-        transition: opacity 150ms ease;
+        transform: scale(0.4);
+        transition: opacity 180ms ease, transform 220ms cubic-bezier(0.34, 1.56, 0.64, 1);
     }
 
     .checkout-payment-method.is-selected .checkout-payment-radio-dot {
         opacity: 1;
+        transform: scale(1);
     }
 
     .checkout-payment-logo {
@@ -1062,7 +1083,12 @@
         border: 1px solid transparent;
         border-radius: var(--radius-md);
         cursor: pointer;
-        transition: background-color 200ms ease, opacity 200ms ease;
+        transition: background-color 200ms ease, opacity 200ms ease,
+            transform 80ms ease;
+    }
+
+    .checkout-place-order:active:not(:disabled) {
+        transform: scale(0.985);     /* tactile press */
     }
 
     .checkout-place-order:hover:not(:disabled) {
@@ -1191,5 +1217,217 @@
         .checkout-confirmation-actions {
             flex-direction: row;
         }
+    }
+
+    /* ──────────────────────────────────────────────────────────────
+       Email account check + inline sign-in (Luma parity).
+       The wrapper places an indicator (spinner / key glyph / check)
+       in the right inset of the email input. The sign-in block
+       slides down underneath when an account exists.
+       ────────────────────────────────────────────────────────────── */
+    .checkout-email-wrap {
+        position: relative;
+    }
+
+    .checkout-email-input {
+        padding-right: 2.5rem;   /* reserve room for the indicator */
+    }
+
+    .checkout-email-indicator {
+        position: absolute;
+        top: 50%;
+        right: 0.75rem;
+        transform: translateY(-50%);
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        width: 1rem;
+        height: 1rem;
+        pointer-events: none;
+    }
+
+    .checkout-email-spinner {
+        color: var(--color-fg-secondary);
+    }
+
+    .checkout-email-icon--key {
+        color: var(--color-primary);
+    }
+
+    .checkout-email-icon--ok {
+        color: #10b981;
+        animation: checkout-pop-in 220ms cubic-bezier(0.34, 1.56, 0.64, 1) both;
+    }
+
+    @keyframes checkout-pop-in {
+        from { opacity: 0; transform: scale(0.6); }
+        to   { opacity: 1; transform: scale(1); }
+    }
+
+    .checkout-signin-block {
+        margin-top: 0.875rem;
+        padding: 0.875rem 1rem 1rem;
+        background-color: color-mix(in srgb, var(--color-primary) 5%, transparent);
+        border: 1px solid color-mix(in srgb, var(--color-primary) 18%, transparent);
+        border-radius: var(--radius-md);
+    }
+
+    .checkout-signin-hint {
+        margin-bottom: 0.625rem;
+        font-size: 0.8125rem;
+        color: var(--color-fg-secondary);
+        line-height: 1.4;
+    }
+
+    .checkout-signin-actions {
+        display: flex;
+        align-items: center;
+        gap: 1rem;
+        margin-top: 1.125rem;   /* breathing room — was 0.75rem,
+                                    button felt stuck to the input */
+    }
+
+    .checkout-signin-btn {
+        /* Slightly more compact than the full address-step submit so
+           it doesn't read as the "primary" action of the step — the
+           Continue button below it is. */
+        padding: 0.5rem 1rem;
+        font-size: 0.8125rem;
+    }
+
+    /* ──────────────────────────────────────────────────────────────
+       Generic checkbox row (newsletter, agreements). Native input
+       styled with `accent-color` for the tick — keeps native a11y
+       and right-click behaviour without faking the control.
+       ────────────────────────────────────────────────────────────── */
+    .checkout-checkbox {
+        display: flex;
+        align-items: flex-start;
+        gap: 0.625rem;
+        cursor: pointer;
+        font-size: 0.875rem;
+        color: var(--color-fg);
+        line-height: 1.4;
+    }
+
+    .checkout-checkbox-input {
+        flex-shrink: 0;
+        width: 1rem;
+        height: 1rem;
+        margin-top: 0.1rem;     /* visual line-up with the label */
+        accent-color: var(--color-primary);
+        cursor: pointer;
+    }
+
+    .checkout-checkbox-label .req {
+        color: #dc2626;
+        margin-left: 0.125rem;
+    }
+
+    /* "Save in my address book" — Luma-parity opt-in for logged-in
+       shoppers who entered an address that doesn't match a saved one.
+       Sits between the billing toggle and the order-comments / submit. */
+    .checkout-save-address {
+        margin-top: 1rem;
+        padding: 0.625rem 0.75rem;
+        background-color: var(--color-gray-50);
+        border: 1px dashed var(--color-gray-200);
+        border-radius: var(--radius-md);
+    }
+
+    /* ──────────────────────────────────────────────────────────────
+       Newsletter opt-in — discreet. No card, no icon, no tint. Just
+       a thin top divider, normal-weight muted label, tiny GDPR
+       notice underneath. The agreements card below carries the
+       visual weight of "things you sign at the bottom of the form" —
+       the newsletter is a quiet aside.
+       ────────────────────────────────────────────────────────────── */
+    .checkout-newsletter {
+        margin-top: 1rem;
+        padding-top: 0.875rem;
+        border-top: 1px solid var(--color-gray-100);
+    }
+
+    .checkout-newsletter .checkout-checkbox-label {
+        font-size: 0.8125rem;
+        font-weight: 400;
+        color: var(--color-fg-secondary);
+    }
+
+    .checkout-newsletter-notice {
+        margin-top: 0.25rem;
+        padding-left: 1.625rem;     /* match label indent under the checkbox */
+        font-size: 0.6875rem;
+        line-height: 1.5;
+        color: var(--color-fg-secondary);
+        opacity: 0.85;
+    }
+
+    /* Agreements block — one card per agreement with a scrollable
+       content panel and the checkbox below. */
+    .checkout-agreements {
+        margin-top: 1.25rem;
+        padding-top: 1rem;
+        border-top: 1px solid var(--color-gray-100);
+        display: flex;
+        flex-direction: column;
+        gap: 0.875rem;
+    }
+
+    .checkout-agreement {
+        background-color: var(--color-gray-50);
+        border: 1px solid var(--color-gray-200);
+        border-radius: var(--radius-md);
+        padding: 0.875rem 1rem;
+    }
+
+    .checkout-agreement-content {
+        font-size: 0.8125rem;
+        line-height: 1.5;
+        color: var(--color-fg-secondary);
+        margin-bottom: 0.625rem;
+        background-color: var(--color-surface);
+        border: 1px solid var(--color-gray-200);
+        border-radius: var(--radius-md);
+        padding: 0.625rem 0.875rem;
+    }
+
+    .checkout-agreement-content p {
+        margin: 0 0 0.5rem;
+    }
+
+    .checkout-agreement-content :last-child {
+        margin-bottom: 0;
+    }
+
+    .checkout-agreement-content a {
+        color: var(--color-primary);
+        text-decoration: underline;
+        text-underline-offset: 2px;
+    }
+
+    /* ──────────────────────────────────────────────────────────────
+       Order-comments "Saved ✓" confirmation pill — Alpine timer
+       toggles `data-saved="true"` after `saveOrderComments` succeeds;
+       the CSS animates a fade-in + auto fade-out via animation-fill.
+       ────────────────────────────────────────────────────────────── */
+    .checkout-order-comments-saved {
+        display: inline-flex;
+        align-items: center;
+        gap: 0.25rem;
+        padding: 0.125rem 0.5rem;
+        background-color: color-mix(in srgb, #10b981 12%, transparent);
+        color: #047857;
+        border-radius: 9999px;
+        font-size: 0.6875rem;
+        font-weight: 600;
+        opacity: 0;
+        transform: translateY(2px);
+        transition: opacity 180ms ease, transform 180ms ease;
+    }
+
+    .checkout-order-comments-saved.is-visible {
+        opacity: 1;
+        transform: translateY(0);
     }
 }

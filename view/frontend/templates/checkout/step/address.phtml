@@ -75,15 +75,12 @@ $summary = $magewire->getAddressSummary();
     </div>
     <?php endif ?>
 
-    <?php if (!$isLoggedIn): ?>
-    <div class="checkout-tabs">
-        <span class="is-active"><?= $escaper->escapeHtml(__('Guest checkout')) ?></span>
-        <a href="<?= $escaper->escapeUrl($block->getUrl('customer/account/login', ['referer' => base64_encode($block->getUrl('checkout'))])) ?>">
-            <?= $escaper->escapeHtml(__('Sign in')) ?>
-        </a>
-    </div>
-    <?php endif ?>
-
+    <?php /* Guest / Sign-in tab pair removed: the inline email-check
+            inside the form now handles "do you have an account?" without
+            forcing the shopper to pick a flow up-front. Filling the
+            password reveals an explicit Sign in button (full reload on
+            success); leaving it blank lets `saveAddress` continue as
+            guest. */ ?>
     <?php
     if (!empty($savedAddresses)) {
         $savedAddressesTemplate = $block->getTemplateFile('Ethelserth_Checkout::checkout/address/saved-addresses.phtml');
@@ -102,6 +99,29 @@ $summary = $magewire->getAddressSummary();
         $billingTemplate = $block->getTemplateFile('Ethelserth_Checkout::checkout/address/billing-toggle.phtml');
         if ($billingTemplate) include $billingTemplate;
         ?>
+
+        <?php /* Save-in-address-book — always rendered for logged-in
+                shoppers; the server-side `findMatchingSavedAddress`
+                guard inside `saveAddress` is what stops a duplicate
+                row from landing in `customer_address_entity` when
+                the form already matches a saved one. We tried gating
+                visibility client-side via Alpine fingerprint compare,
+                but Magewire's $wire reactivity on `wire:model.defer`
+                properties wasn't consistent enough — better to always
+                show and trust the server-side dup check. */ ?>
+        <?php if ($magewire->isLoggedIn): ?>
+        <div class="checkout-save-address">
+            <label for="checkout-save-address" class="checkout-checkbox">
+                <input type="checkbox"
+                       id="checkout-save-address"
+                       wire:model.defer="saveInAddressBook"
+                       class="checkout-checkbox-input"/>
+                <span class="checkout-checkbox-label">
+                    <?= $escaper->escapeHtml(__('Save in my address book for next time')) ?>
+                </span>
+            </label>
+        </div>
+        <?php endif ?>
 
         <?php /* Order comments — renders only when admin placement === 'address'. */ ?>
         <?php if ($orderCommentsConfig instanceof \Ethelserth\Checkout\ViewModel\OrderCommentsConfig):

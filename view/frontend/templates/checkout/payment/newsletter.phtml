@@ -1,0 +1,43 @@
+<?php
+/**
+ * Newsletter opt-in checkbox + GDPR notice.
+ *
+ * Renders only when ALL three gates pass (see NewsletterConfig
+ * docblock): Magento_Newsletter is enabled, the native
+ * `newsletter/subscription/allow_guest_subscribe` flag is on, AND
+ * our own `ethelserth_checkout/newsletter/enabled` toggle is on.
+ *
+ * Subscription happens AFTER successful order placement
+ * (`Payment::maybeSubscribeNewsletter`) — never on the checkbox
+ * tick alone, never if the order fails.
+ *
+ * @var \Magento\Framework\View\Element\Template $block
+ * @var \Magento\Framework\Escaper $escaper
+ * @var \Ethelserth\Checkout\ViewModel\NewsletterConfig $newsletterConfig
+ */
+declare(strict_types=1);
+
+if (!isset($newsletterConfig) || !$newsletterConfig->isEnabled()) {
+    return;
+}
+
+$label  = $newsletterConfig->getLabel();
+$notice = $newsletterConfig->getNotice();
+?>
+
+<div class="checkout-newsletter">
+    <label for="checkout-newsletter-opt-in" class="checkout-checkbox">
+        <input type="checkbox"
+               id="checkout-newsletter-opt-in"
+               wire:model.defer="subscribeNewsletter"
+               class="checkout-checkbox-input"/>
+        <span class="checkout-checkbox-label">
+            <?= $escaper->escapeHtml($label) ?>
+        </span>
+    </label>
+    <?php if (trim($notice) !== ''): ?>
+    <p class="checkout-newsletter-notice">
+        <?= $escaper->escapeHtml($notice) ?>
+    </p>
+    <?php endif ?>
+</div>

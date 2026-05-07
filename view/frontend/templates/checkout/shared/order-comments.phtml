@@ -64,7 +64,17 @@ $fieldId     = 'checkout-order-comments-' . $escaper->escapeHtmlAttr($currentSte
 ?>
 
 <div class="checkout-order-comments"
-     x-data="{ remaining() { return <?= (int) $maxLength ?> - ($wire.orderComments || '').length } }">
+     x-data="{
+        showSaved: false,
+        savedTimer: null,
+        flashSaved() {
+            this.showSaved = true;
+            clearTimeout(this.savedTimer);
+            this.savedTimer = setTimeout(() => { this.showSaved = false }, 1500);
+        },
+        remaining() { return <?= (int) $maxLength ?> - ($wire.orderComments || '').length }
+     }"
+     x-on:order-comments-saved.window="flashSaved()">
 
     <label for="<?= $escaper->escapeHtmlAttr($fieldId) ?>" class="checkout-order-comments-label">
         <?= $escaper->escapeHtml($label) ?>
@@ -90,6 +100,16 @@ $fieldId     = 'checkout-order-comments-' . $escaper->escapeHtmlAttr($currentSte
         </span>
         <span wire:loading.remove wire:target="saveOrderComments" class="checkout-order-comments-counter">
             <span x-text="remaining()"></span> <?= $escaper->escapeHtml(__('characters left')) ?>
+        </span>
+        <span class="checkout-order-comments-saved"
+              :class="showSaved ? 'is-visible' : ''"
+              x-cloak
+              aria-live="polite">
+            <svg width="10" height="10" fill="none" stroke="currentColor"
+                 stroke-width="3" viewBox="0 0 24 24" aria-hidden="true">
+                <path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7"/>
+            </svg>
+            <?= $escaper->escapeHtml(__('Saved')) ?>
         </span>
     </p>
 
